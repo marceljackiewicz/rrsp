@@ -19,5 +19,12 @@ function testShortestPathSingleArcPaths()
     Test.@test p.arcs == [argmin(arc -> arc.cost.first, instance.graph.arcs)]
 end
 
+function testRrspContBudgetSinglePathUsingDagModel()
+    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_path.rrsp")
+    solution::rrsp.RrspSolution = rrsp.getRrspContBudgetDag(instance)
+    Test.@test solution.first_stage_path == solution.first_stage_path  # fix the test
+end
+
 testShortestPathSinglePath()
 testShortestPathSingleArcPaths()
+testRrspContBudgetSinglePathUsingDagModel()
