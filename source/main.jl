@@ -145,19 +145,20 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
 end
 
 function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution
-    # For now, inclusion neighbourhood only!
+    # TODO For now, inclusion neighbourhood only!
     optimizer = Cbc.Optimizer
     model = JuMP.Model()
     JuMP.set_optimizer(model, optimizer)
 
-    theta::Float64 = 1/t
+    theta::Float64 = t > 0 ? 1/t : 0.0
+    num_of_snd_stage_paths = t > 0 ? t : 1
 
     # first stage path characteristic vector, x[i] --- is the i-th arc taken?
     JuMP.@variable(model, x[i in 1:length(instance.graph.arcs)], Bin)
     # second stage paths characteristic vectors, y[i, j] --- is the j-th arc taken in the i-th path?
-    JuMP.@variable(model, y[i in 1:t, j in 1:length(instance.graph.arcs)], Bin)
+    JuMP.@variable(model, y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)], Bin)
     # second stage utility variables to model neighbourhood containment
-    JuMP.@variable(model, z[i in 1:t, j in 1:length(instance.graph.arcs)] >= 0)
+    JuMP.@variable(model, z[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)] >= 0)
     # contiguous flow variables
     JuMP.@variable(model, 0 <= f_1[i in 1:length(instance.graph.arcs)] <= theta)
     JuMP.@variable(model, 0 <= f_2[i in 1:length(instance.graph.arcs)] <= 1 - theta)
@@ -166,7 +167,7 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.@constraint(
         model,
         second_stage_opt_flow_to_selection[i in 1:length(instance.graph.arcs)],
-        theta*sum(y[j, i] for j in 1:t) == f_1[i] + f_2[i]
+        theta*sum(y[j, i] for j in 1:num_of_snd_stage_paths) == f_1[i] + f_2[i]
     )
 
     # constraints for arcs in x to create a path
@@ -193,19 +194,19 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     # constraints for arcs in y to create a path
     JuMP.@constraint(
         model,
-        second_stage_flow_constraint[i in 1:length(instance.graph.nodes), j in 1:t; instance.graph.nodes[i] != instance.s && instance.graph.nodes[i] != instance.t],
+        second_stage_flow_constraint[i in 1:length(instance.graph.nodes), j in 1:num_of_snd_stage_paths; instance.graph.nodes[i] != instance.s && instance.graph.nodes[i] != instance.t],
         sum(y[j,k] for k in 1:length(instance.graph.arcs) if instance.graph.arcs[k].start_node == instance.graph.nodes[i]) == sum(y[j, k] for k in 1:length(instance.graph.arcs) if instance.graph.arcs[k].end_node == instance.graph.nodes[i])
     )
     JuMP.@constraint(
         model,
-        second_stage_flow_source[j in 1:t],
+        second_stage_flow_source[j in 1:num_of_snd_stage_paths],
           sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.s)
         - sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.s)
         == 1
     )
     JuMP.@constraint(
         model,
-        second_stage_flow_sink[j in 1:t],
+        second_stage_flow_sink[j in 1:num_of_snd_stage_paths],
           sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.t)
         - sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.t)
         == -1
@@ -214,17 +215,17 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     # arc inclusion neighbourhood constraints
     JuMP.@constraint(
         model,
-        second_stage_different_arcs_bound[j in 1:t],
+        second_stage_different_arcs_bound[j in 1:num_of_snd_stage_paths],
           sum(y[j, i] - z[j,i] for i in 1:length(instance.graph.arcs) ) <= instance.k
     )
     JuMP.@constraint(
         model,
-        second_stage_z_vs_x[i in 1:t, j in 1:length(instance.graph.arcs)],
+        second_stage_z_vs_x[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
         z[i, j] <= x[j]
     )
     JuMP.@constraint(
         model,
-        second_stage_z_vs_y[i in 1:t, j in 1:length(instance.graph.arcs)],
+        second_stage_z_vs_y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
         z[i, j] <= y[i, j]
     )
 
@@ -252,9 +253,9 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         p::Path -> sum(
             p.arcs[i]*(
                   instance.graph.arcs[i].cost.second*JuMP.value(f_1[i])
-                + instance.graph.arcs[i].cost.delta*JuMP.value(f_2[i]))
+                + (instance.graph.arcs[i].cost.second + instance.graph.arcs[i].cost.delta)*JuMP.value(f_2[i]))
             for i in 1:length(instance.graph.arcs)),
-        [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:t]
+        [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:num_of_snd_stage_paths]
     )
 
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))
@@ -263,7 +264,7 @@ end
 function getRrspContBudgetDag(instance::RrspInstance)::RrspSolution
     best_sol::RrspSolution = RrspSolution(Path([]), Path([]), Inf)
     t::Integer = length(instance.graph.arcs) + 1
-    for theta::Integer in 1:t  # TODO 0::t, but refactor first
+    for theta::Integer in 0:t
         fixed_theta_sol::RrspSolution = solveRrspContBudgedDagForTheta(instance, theta)
         if fixed_theta_sol.value < best_sol.value
             best_sol = fixed_theta_sol

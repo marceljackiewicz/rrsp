@@ -3,7 +3,7 @@ Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 
 <description goes here>
 
-ver 0.1.0
+ver 0.2.0
 
 ## How to install
 ...
@@ -19,6 +19,10 @@ ver 0.1.0
 <>
 
 ## Changelog
+
+### 0.2.0
+- added RRSP cont. budget in DAGs from model,
+- changed rrsp.Path to be characteristic vector.
 
 ### 0.1.0
 - parsing problem instance from file,
