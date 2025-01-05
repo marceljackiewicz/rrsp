@@ -27,6 +27,31 @@ function testRrspContBudgetSinglePathUsingDagModel()
     Test.@test solution.second_stage_path.arcs == [1 for _ in 1:length(instance.graph.arcs)]
 end
 
-testShortestPathSinglePath()
-testShortestPathSingleArcPaths()
-testRrspContBudgetSinglePathUsingDagModel()
+function testAspTreeDecomposition()
+    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_path.rrsp")
+    tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
+
+    println("-----------", tree.root_idx)
+    for n in tree.nodes
+        println("\t", n)
+    end
+
+    instance = rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
+    tree = rrsp.getAspTreeDecomposition(instance.graph)
+    println("-----------", tree.root_idx)
+    for n in tree.nodes
+        println("\t", n)
+    end
+
+    instance = rrsp.parseInstanceFromFile("data/two_beads.rrsp")
+    tree = rrsp.getAspTreeDecomposition(instance.graph)
+    println("-----------", tree.root_idx)
+    for n in tree.nodes
+        println("\t", n)
+    end
+end
+
+# testShortestPathSinglePath()
+# testShortestPathSingleArcPaths()
+# testRrspContBudgetSinglePathUsingDagModel()
+testAspTreeDecomposition()

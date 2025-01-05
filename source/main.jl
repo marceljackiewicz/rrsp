@@ -35,6 +35,28 @@ struct Graph
     arcs::Vector{Arc}
 end
 
+@enum AspTreeOp SERIES PARALLEL NONE
+
+struct AspTreeNode
+    s::Node
+    t::Node
+    left::Integer
+    right::Integer
+    arc::Array{Arc}
+    operation::AspTreeOp
+    is_leaf::Bool
+end
+
+struct AspTree
+    root_idx::Integer
+    nodes::Vector{AspTreeNode}
+end
+
+struct AspComponent
+    s::Node
+    t::Node
+end
+
 struct RrspInstance
     graph::Graph
     s::Node
@@ -274,6 +296,101 @@ function getRrspContBudgetDag(instance::RrspInstance)::RrspSolution
     println("-----------")
     println(best_sol)
     return best_sol
+end
+
+function getAspTreeDecomposition(g::Graph)::AspTree
+    # komponenty działają ok, ale ciężko jest zrobić drzewo bez wskaźników
+    function areParallelComponents(a::AspComponent, b::AspComponent)::Bool
+        return (a.s == b.s) && (a.t == b.t)
+    end
+
+    function findParallelComponent(components::Vector{Array{AspComponent}})::Array{Integer}
+        for idx1 in 1:(length(components) - 1)  # the last arc can't have a pair
+            if length(components[idx1]) == 0
+                continue
+            end
+
+            for idx2 in (idx1 + 1):length(components)
+                if length(components[idx2]) == 0
+                    continue
+                end
+    
+                if areParallelComponents(components[idx1][1], components[idx2][1])
+                    return [idx1, idx2]
+                end
+            end
+        end
+
+        return [0, 0]
+    end
+
+    function areSeriesComponents(a::AspComponent, b::AspComponent)::Bool
+        return a.t == b.s
+    end
+
+    function findSeriesComponent(components::Vector{Array{AspComponent}})::Array{Integer}
+        arcs_in::Dict{Node, Vector{Integer}} = Dict{Node, Vector{Integer}}()
+        arcs_out::Dict{Node, Vector{Integer}} = Dict{Node, Vector{Integer}}()
+
+        for idx in 1:length(components)
+            if length(components[idx]) > 0
+                haskey(arcs_in, components[idx][1].t) ? push!(arcs_in[components[idx][1].t], idx) : arcs_in[components[idx][1].t] = [idx]
+                haskey(arcs_out, components[idx][1].s) ? push!(arcs_out[components[idx][1].s], idx) : arcs_out[components[idx][1].s] = [idx]
+            end
+        end
+
+        for item in arcs_in
+            node::Node = item.first
+            if haskey(arcs_out, node) && length(arcs_in[node]) == length(arcs_out[node]) == 1
+                println("xxxxxxxxxxxx", [arcs_in[node][1], arcs_out[node][1]])
+                return [arcs_in[node][1], arcs_out[node][1]]
+            end
+        end
+
+        # println("before ret", arcs_in, arcs_out)
+        return [0, 0]
+    end
+
+    # create an ASP component for each arc in g
+    components::Vector{Array{AspComponent}} = [[AspComponent(arc.start_node, arc.end_node)] for arc in g.arcs]
+    tree_nodes::Vector{AspTreeNode} = [AspTreeNode(arc.start_node, arc.end_node, 0, 0, [arc], NONE, true) for arc in g.arcs]
+
+    components_removed = 0
+    while components_removed < length(g.arcs) - 1
+        # while there are two series components
+        s_comps = findSeriesComponent(components)
+        while s_comps != [0, 0]
+            println("here")
+            # sort!(s_comps)
+            println("****** ", components, s_comps)
+            push!(components, [AspComponent(components[s_comps[1]][1].s, components[s_comps[2]][1].t)])
+            push!(tree_nodes, AspTreeNode(components[s_comps[1]][1].s, components[s_comps[2]][1].t, s_comps[1], s_comps[2], [], SERIES, false))
+            components_removed += 1
+            # delete s_comps[2] first as it will change the indices
+            # deleteat!(components, s_comps[2])
+            components[s_comps[2]] = []
+            components[s_comps[1]] = []
+            # deleteat!(components, s_comps[1])
+            s_comps = findSeriesComponent(components)
+        end
+
+        # while there are two components parallel components
+        p_comps = findParallelComponent(components)
+        while p_comps != [0, 0]
+            push!(components, [AspComponent(components[p_comps[1]][1].s, components[p_comps[1]][1].t)])
+            push!(tree_nodes, AspTreeNode(components[p_comps[1]][1].s, components[p_comps[1]][1].t, p_comps[1], p_comps[2], [], PARALLEL, false))
+            components_removed += 1
+            # delete p_comps[2] first as it will change the indices
+            # deleteat!(components, p_comps[2])
+            # deleteat!(components, p_comps[1])
+            components[p_comps[2]] = []
+            components[p_comps[1]] = []
+            p_comps = findParallelComponent(components)
+            println("****** ", components)
+        end
+    end
+
+    return AspTree(length(tree_nodes), tree_nodes)
 end
 
 end  # module rrsp
