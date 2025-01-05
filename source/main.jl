@@ -27,7 +27,7 @@ struct Arc
 end
 
 struct Path
-    arcs::Vector{Arc}
+    arcs::Vector{Bool}  # path characteristic vector
 end
 
 struct Graph
@@ -90,7 +90,8 @@ function getShortestPath(g::Graph, s::Node, t::Node)::Path
     end
 
     println("arcs: ", JuMP.value.(model[:x]))
-    path::Path = Path([g.arcs[i] for i in 1:length(g.arcs) if JuMP.value(x[i]) > 0.5])
+    # path::Path = Path([g.arcs[i] for i in 1:length(g.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
+    path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
     return path
 end
 
@@ -236,7 +237,6 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         + instance.gamma*theta
     )
 
-    # print(model)
     JuMP.set_silent(model)
     JuMP.optimize!(model)
 
@@ -246,12 +246,16 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     end
 
     println("arcs: ", JuMP.value.(model[:x]))
-    first_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(x[i]) > 0.5])
-    # second_stage_path::Path = argmin(
-    #     p::Path -> sum(instance.graph.arcs[i].cost.second*JuMP.value(f_1[i])),
-    #     [Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(y[j, i]) > 0.5]) for j in 1:t]
-    # ) # change Path to be a char. vector to get the proper solution
-    second_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(y[1, i]) > 0.5])
+    # first_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
+    first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    second_stage_path::Path = argmin(
+        p::Path -> sum(
+            p.arcs[i]*(
+                  instance.graph.arcs[i].cost.second*JuMP.value(f_1[i])
+                + instance.graph.arcs[i].cost.delta*JuMP.value(f_2[i]))
+            for i in 1:length(instance.graph.arcs)),
+        [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:t]
+    )
 
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))
 end
