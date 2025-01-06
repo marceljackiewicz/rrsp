@@ -38,12 +38,12 @@ function testAspTreeDecomposition()
         solution::rrsp.RrspSolution = rrsp.getRrspContBudgetDag(instance)
         println(solution)
 
-        tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
-        println("tree------")
-        for n in tree.nodes
-            println("\t", n)
-        end
-        println("-----------", tree.root_idx)
+        # tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
+        # println("tree------")
+        # for n in tree.nodes
+        #     println("\t", n)
+        # end
+        # println("-----------", tree.root_idx)
     end
 end
 

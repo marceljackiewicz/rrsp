@@ -102,16 +102,13 @@ function getShortestPath(g::Graph, s::Node, t::Node)::Path
 
     JuMP.@objective(model, Min, sum(x[i]*g.arcs[i].cost.first for i in 1:length(g.arcs)))
 
-    # print(model)
     JuMP.set_silent(model)
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        # println("no primal solution")
         return Path([])
     end
 
-    # path::Path = Path([g.arcs[i] for i in 1:length(g.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
     path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
     return path
 end
@@ -188,7 +185,7 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.@constraint(
         model,
         second_stage_opt_flow_to_selection[i in 1:length(instance.graph.arcs)],
-        theta*sum(y[j, i] for j in 1:num_of_snd_stage_paths) == f_1[i] + f_2[i]
+        (theta == 0.0 ? 1.0 : theta)*sum(y[j, i] for j in 1:num_of_snd_stage_paths) == f_1[i] + f_2[i]
     )
 
     # constraints for arcs in x to create a path
@@ -263,7 +260,7 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        # println("no primal solution")
+        println("no primal solution", t)
         return RrspSolution(Path([]), Path([]), Inf)
     end
 
@@ -278,6 +275,7 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:num_of_snd_stage_paths]
     )
 
+    println("solution ", t, " ", RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model)))
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))
 end
 
