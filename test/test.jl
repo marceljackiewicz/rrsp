@@ -28,26 +28,22 @@ function testRrspContBudgetSinglePathUsingDagModel()
 end
 
 function testAspTreeDecomposition()
-    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_path.rrsp")
-    tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
+    graphs::Array{String} = [
+        "data/two_beads.rrsp",
+        "data/fixed_theta_counterexample.rrsp"
+    ]
 
-    println("-----------", tree.root_idx)
-    for n in tree.nodes
-        println("\t", n)
-    end
+    for graph_file in graphs
+        instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile(graph_file)
+        solution::rrsp.RrspSolution = rrsp.getRrspContBudgetDag(instance)
+        println(solution)
 
-    instance = rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
-    tree = rrsp.getAspTreeDecomposition(instance.graph)
-    println("-----------", tree.root_idx)
-    for n in tree.nodes
-        println("\t", n)
-    end
-
-    instance = rrsp.parseInstanceFromFile("data/two_beads.rrsp")
-    tree = rrsp.getAspTreeDecomposition(instance.graph)
-    println("-----------", tree.root_idx)
-    for n in tree.nodes
-        println("\t", n)
+        tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
+        println("tree------")
+        for n in tree.nodes
+            println("\t", n)
+        end
+        println("-----------", tree.root_idx)
     end
 end
 

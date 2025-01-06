@@ -107,11 +107,10 @@ function getShortestPath(g::Graph, s::Node, t::Node)::Path
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        println("no primal solution")
+        # println("no primal solution")
         return Path([])
     end
 
-    println("arcs: ", JuMP.value.(model[:x]))
     # path::Path = Path([g.arcs[i] for i in 1:length(g.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
     path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
     return path
@@ -264,11 +263,10 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        println("no primal solution")
+        # println("no primal solution")
         return RrspSolution(Path([]), Path([]), Inf)
     end
 
-    println("arcs: ", JuMP.value.(model[:x]))
     # first_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
     first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
     second_stage_path::Path = argmin(
@@ -293,8 +291,6 @@ function getRrspContBudgetDag(instance::RrspInstance)::RrspSolution
         end
     end
 
-    println("-----------")
-    println(best_sol)
     return best_sol
 end
 
@@ -342,12 +338,10 @@ function getAspTreeDecomposition(g::Graph)::AspTree
         for item in arcs_in
             node::Node = item.first
             if haskey(arcs_out, node) && length(arcs_in[node]) == length(arcs_out[node]) == 1
-                println("xxxxxxxxxxxx", [arcs_in[node][1], arcs_out[node][1]])
                 return [arcs_in[node][1], arcs_out[node][1]]
             end
         end
 
-        # println("before ret", arcs_in, arcs_out)
         return [0, 0]
     end
 
@@ -357,20 +351,15 @@ function getAspTreeDecomposition(g::Graph)::AspTree
 
     components_removed = 0
     while components_removed < length(g.arcs) - 1
+
         # while there are two series components
         s_comps = findSeriesComponent(components)
         while s_comps != [0, 0]
-            println("here")
-            # sort!(s_comps)
-            println("****** ", components, s_comps)
             push!(components, [AspComponent(components[s_comps[1]][1].s, components[s_comps[2]][1].t)])
             push!(tree_nodes, AspTreeNode(components[s_comps[1]][1].s, components[s_comps[2]][1].t, s_comps[1], s_comps[2], [], SERIES, false))
             components_removed += 1
-            # delete s_comps[2] first as it will change the indices
-            # deleteat!(components, s_comps[2])
             components[s_comps[2]] = []
             components[s_comps[1]] = []
-            # deleteat!(components, s_comps[1])
             s_comps = findSeriesComponent(components)
         end
 
@@ -380,13 +369,9 @@ function getAspTreeDecomposition(g::Graph)::AspTree
             push!(components, [AspComponent(components[p_comps[1]][1].s, components[p_comps[1]][1].t)])
             push!(tree_nodes, AspTreeNode(components[p_comps[1]][1].s, components[p_comps[1]][1].t, p_comps[1], p_comps[2], [], PARALLEL, false))
             components_removed += 1
-            # delete p_comps[2] first as it will change the indices
-            # deleteat!(components, p_comps[2])
-            # deleteat!(components, p_comps[1])
             components[p_comps[2]] = []
             components[p_comps[1]] = []
             p_comps = findParallelComponent(components)
-            println("****** ", components)
         end
     end
 
