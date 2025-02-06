@@ -42,7 +42,7 @@ struct AspTreeNode
     t::Node
     left::Integer
     right::Integer
-    arc::Array{Arc}
+    arcs::Array{Arc}
     operation::AspTreeOp
     is_leaf::Bool
 end
@@ -293,7 +293,6 @@ function getRrspContBudgetDag(instance::RrspInstance)::RrspSolution
 end
 
 function getAspTreeDecomposition(g::Graph)::AspTree
-    # komponenty działają ok, ale ciężko jest zrobić drzewo bez wskaźników
     function areParallelComponents(a::AspComponent, b::AspComponent)::Bool
         return (a.s == b.s) && (a.t == b.t)
     end
@@ -374,6 +373,30 @@ function getAspTreeDecomposition(g::Graph)::AspTree
     end
 
     return AspTree(length(tree_nodes), tree_nodes)
+end
+
+function solveRrspContBudgetAsp(instance::RrspInstance)::RrspSolution
+    tree::AspTree = getAspTreeDecomposition(instance.graph)
+
+    function getLeftNode(tree::AspTree, idx::Integer)
+        return tree.nodes[tree.nodes[i].left]
+    end
+
+    function getRightNode(tree::AspTree, idx::Integer)
+        return tree.nodes[tree.nodes[i].right]
+    end
+
+    while length(tree.nodes) > 1
+        comp_idx::Integer = 0
+        for i in 1:length(tree.nodes)
+            if !tree.nodes[i].is_leaf && getLeftNode(tree, i).is_leaf && getRightNode(tree, i).is_leaf
+                comp_idx = i
+                break
+            end
+        end
+
+        
+    end
 end
 
 end  # module rrsp
