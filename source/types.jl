@@ -24,6 +24,8 @@ struct Arc
     cost::Cost
 end
 
+@enum NeighbourhoodType INCLUSION EXCLUSION SYM_DIFF
+
 struct Path
     arcs::Vector{Bool}  # path characteristic vector
 end

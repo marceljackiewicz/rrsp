@@ -13,6 +13,7 @@ import JuMP
 include("types.jl")
 
 include("deterministic.jl")
+include("incremental.jl")
 
 function parseInstanceFromFile(file_name::String)::RrspInstance
     nodes::Vector{Node} = []
@@ -99,8 +100,6 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.@variable(model, x[i in 1:length(instance.graph.arcs)], Bin)
     # second stage paths characteristic vectors, y[i, j] --- is the j-th arc taken in the i-th path?
     JuMP.@variable(model, y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)], Bin)
-    # second stage utility variables to model neighbourhood containment
-    JuMP.@variable(model, z[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)] >= 0)
     # contiguous flow variables
     JuMP.@variable(model, 0 <= f_1[i in 1:length(instance.graph.arcs)] <= theta)
     JuMP.@variable(model, 0 <= f_2[i in 1:length(instance.graph.arcs)] <= 1 - theta)
@@ -120,22 +119,10 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         addPathConstraints(model, model[:y][i, :], instance.graph, instance.s_idx, instance.t_idx)
     end
 
-    # arc inclusion neighbourhood constraints
-    JuMP.@constraint(
-        model,
-        second_stage_different_arcs_bound[j in 1:num_of_snd_stage_paths],
-          sum(y[j, i] - z[j,i] for i in 1:length(instance.graph.arcs) ) <= instance.k
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_z_vs_x[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
-        z[i, j] <= x[j]
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_z_vs_y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
-        z[i, j] <= y[i, j]
-    )
+    # arc inclusion neighbourhood constraints for y[i]
+    for i in 1:num_of_snd_stage_paths
+        addNeighbourhoodConstraints(model, model[:x], model[:y][i, :], EXCLUSION, instance.k, length(instance.graph.arcs))
+    end
 
     JuMP.@objective(
         model,
@@ -154,7 +141,6 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         return RrspSolution(Path([]), Path([]), Inf)
     end
 
-    # first_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
     first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
     second_stage_path::Path = argmin(
         p::Path -> sum(

@@ -31,10 +31,10 @@ function addPathConstraints(mdl::JuMP.Model, x::Vector{JuMP.VariableRef}, g::Gra
 
     # At any node (besides @a s and @a t) the flow is conserved
     JuMP.@constraint(
-        mdl, #=flow_conservation=#[i in allInternalNodesIndices()], sumInFlowAtNodeIdx(i) == sumOutFlowAtNodeIdx(i)
-    )
+        mdl, [i in allInternalNodesIndices()], sumInFlowAtNodeIdx(i) == sumOutFlowAtNodeIdx(i)
+    )  # flow conservation
 
     # Flow starts (flow in + 1 = flow out) and ends (flow in - 1 = flow out) in the specified nodes
-    JuMP.@constraint(mdl, #=flow_source,=# sumOutFlowAtNodeIdx(s_idx) - sumInFlowAtNodeIdx(s_idx) == 1)
-    JuMP.@constraint(mdl, #=flow_sink,=# sumOutFlowAtNodeIdx(t_idx) - sumInFlowAtNodeIdx(t_idx) == -1)
+    JuMP.@constraint(mdl, sumOutFlowAtNodeIdx(s_idx) - sumInFlowAtNodeIdx(s_idx) ==  1)  # flow_source
+    JuMP.@constraint(mdl, sumOutFlowAtNodeIdx(t_idx) - sumInFlowAtNodeIdx(t_idx) == -1)  # flow_sink
 end
