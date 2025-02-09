@@ -9,13 +9,14 @@ import Test
 
 function testShortestPathSinglePath()
     instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_path.rrsp")
-    p::rrsp.Path = rrsp.getShortestPath(instance.graph, instance.s, instance.t)
+    println(instance)
+    p::rrsp.Path = rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)
     Test.@test p.arcs == [1 for _ in 1:length(instance.graph.arcs)]
 end
 
 function testShortestPathSingleArcPaths()
     instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
-    p::rrsp.Path = rrsp.getShortestPath(instance.graph, instance.s, instance.t)
+    p::rrsp.Path = rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)
     min_arc::rrsp.Arc = argmin(arc -> arc.cost.first, instance.graph.arcs)
     Test.@test p.arcs == [arc == min_arc for arc in instance.graph.arcs]
 end
@@ -38,16 +39,16 @@ function testAspTreeDecomposition()
         solution::rrsp.RrspSolution = rrsp.getRrspContBudgetDag(instance)
         println(solution)
 
-        # tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
-        # println("tree------")
-        # for n in tree.nodes
-        #     println("\t", n)
-        # end
-        # println("-----------", tree.root_idx)
+        tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
+        println("tree------")
+        for n in tree.nodes
+            println("\t", n)
+        end
+        println("-----------", tree.root_idx)
     end
 end
 
-# testShortestPathSinglePath()
-# testShortestPathSingleArcPaths()
-# testRrspContBudgetSinglePathUsingDagModel()
+testShortestPathSinglePath()
+testShortestPathSingleArcPaths()
+testRrspContBudgetSinglePathUsingDagModel()
 testAspTreeDecomposition()

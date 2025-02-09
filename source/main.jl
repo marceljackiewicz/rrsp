@@ -10,108 +10,10 @@ import DataStructures
 import Cbc
 import JuMP
 
-struct Node
-    uid::Integer
-end
+include("types.jl")
 
-struct Cost
-    first::Float64
-    second::Float64
-    delta::Float64
-end
-
-struct Arc
-    start_node::Node
-    end_node::Node
-    cost::Cost
-end
-
-struct Path
-    arcs::Vector{Bool}  # path characteristic vector
-end
-
-struct Graph
-    nodes::Vector{Node}
-    arcs::Vector{Arc}
-end
-
-@enum AspTreeOp SERIES PARALLEL NONE
-
-struct AspTreeNode
-    s::Node
-    t::Node
-    left::Integer
-    right::Integer
-    arcs::Array{Arc}
-    operation::AspTreeOp
-    is_leaf::Bool
-end
-
-struct AspTree
-    root_idx::Integer
-    nodes::Vector{AspTreeNode}
-end
-
-struct AspComponent
-    s::Node
-    t::Node
-end
-
-struct RrspInstance
-    graph::Graph
-    s::Node
-    t::Node
-    k::Integer
-    gamma::Float64
-end
-
-struct RrspSolution
-    first_stage_path::Path
-    second_stage_path::Path
-    value::Float64
-end
-
-function getShortestPath(g::Graph, s::Node, t::Node)::Path
-    optimizer = Cbc.Optimizer
-    model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
-
-    # x[i] --- is the i-th arc taken?
-    JuMP.@variable(model, x[i in 1:length(g.arcs)] >= 0)
-
-    JuMP.@constraint(
-        model,
-        flow_constraint[i in 1:length(g.nodes); g.nodes[i] != s && g.nodes[i] != t],
-        sum(x[j] for j in 1:length(g.arcs) if g.arcs[j].start_node == g.nodes[i]) == sum(x[j] for j in 1:length(g.arcs) if g.arcs[j].end_node == g.nodes[i])
-    )
-
-    JuMP.@constraint(
-        model,
-        flow_source,
-          sum(x[i] for i in 1:length(g.arcs) if g.arcs[i].start_node == s)
-        - sum(x[i] for i in 1:length(g.arcs) if g.arcs[i].end_node == s)
-        == 1
-    )
-    JuMP.@constraint(
-        model,
-        flow_sink,
-          sum(x[i] for i in 1:length(g.arcs) if g.arcs[i].start_node == t)
-        - sum(x[i] for i in 1:length(g.arcs) if g.arcs[i].end_node == t)
-        == -1
-    )
-
-    JuMP.@objective(model, Min, sum(x[i]*g.arcs[i].cost.first for i in 1:length(g.arcs)))
-
-    JuMP.set_silent(model)
-    JuMP.optimize!(model)
-
-    if (!JuMP.has_values(model))
-        return Path([])
-    end
-
-    path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
-    return path
-end
+include("deterministic.jl")
+include("incremental.jl")
 
 function parseInstanceFromFile(file_name::String)::RrspInstance
     nodes::Vector{Node} = []
@@ -144,14 +46,14 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
     end
 
     arcs::Vector{Arc} = []
-    s::Node = Node(-1)
-    t::Node = Node(-1)
+    s_idx::Integer = -1
+    t_idx::Integer = -1
     k::Integer = -1
     gamma::Float64 = 0.0
     open(file_name) do file
         params = split(readline(file))
-        s = Node(parse(Int64, params[1]))
-        t = Node(parse(Int64, params[2]))
+        s_idx = parse(Int64, params[1])
+        t_idx = parse(Int64, params[2])
         k = parse(Int64, params[3])
         gamma = parse(Float64, params[4])
         for line in eachline(file)
@@ -159,7 +61,30 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
         end
     end
 
-    return RrspInstance(Graph(nodes, arcs), s, t, k, gamma)
+    return RrspInstance(Graph(nodes, arcs), s_idx, t_idx, k, gamma)
+end
+
+function solveShortestPath(g::Graph, s_idx::Integer, t_idx::Integer)::Path
+    optimizer = Cbc.Optimizer
+    model::JuMP.Model = JuMP.Model()
+    JuMP.set_optimizer(model, optimizer)
+
+    # x[i] --- is the i-th arc taken?
+    JuMP.@variable(model, x[i in 1:length(g.arcs)] >= 0)
+
+    addPathConstraints(model, model[:x], g, s_idx, t_idx)
+
+    JuMP.@objective(model, Min, sum(x[i]*g.arcs[i].cost.first for i in 1:length(g.arcs)))
+
+    JuMP.set_silent(model)
+    JuMP.optimize!(model)
+
+    if (!JuMP.has_values(model))
+        return Path([])
+    end
+
+    path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
+    return path
 end
 
 function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution
@@ -175,8 +100,6 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     JuMP.@variable(model, x[i in 1:length(instance.graph.arcs)], Bin)
     # second stage paths characteristic vectors, y[i, j] --- is the j-th arc taken in the i-th path?
     JuMP.@variable(model, y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)], Bin)
-    # second stage utility variables to model neighbourhood containment
-    JuMP.@variable(model, z[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)] >= 0)
     # contiguous flow variables
     JuMP.@variable(model, 0 <= f_1[i in 1:length(instance.graph.arcs)] <= theta)
     JuMP.@variable(model, 0 <= f_2[i in 1:length(instance.graph.arcs)] <= 1 - theta)
@@ -189,63 +112,17 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     )
 
     # constraints for arcs in x to create a path
-    JuMP.@constraint(
-        model,
-        first_stage_flow_constraint[i in 1:length(instance.graph.nodes); instance.graph.nodes[i] != instance.s && instance.graph.nodes[i] != instance.t],
-        sum(x[j] for j in 1:length(instance.graph.arcs) if instance.graph.arcs[j].start_node == instance.graph.nodes[i]) == sum(x[j] for j in 1:length(instance.graph.arcs) if instance.graph.arcs[j].end_node == instance.graph.nodes[i])
-    )
-    JuMP.@constraint(
-        model,
-        first_stage_flow_source,
-          sum(x[i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.s)
-        - sum(x[i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.s)
-        == 1
-    )
-    JuMP.@constraint(
-        model,
-        first_stage_flow_sink,
-          sum(x[i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.t)
-        - sum(x[i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.t)
-        == -1
-    )
+    addPathConstraints(model, model[:x], instance.graph, instance.s_idx, instance.t_idx)
 
-    # constraints for arcs in y to create a path
-    JuMP.@constraint(
-        model,
-        second_stage_flow_constraint[i in 1:length(instance.graph.nodes), j in 1:num_of_snd_stage_paths; instance.graph.nodes[i] != instance.s && instance.graph.nodes[i] != instance.t],
-        sum(y[j,k] for k in 1:length(instance.graph.arcs) if instance.graph.arcs[k].start_node == instance.graph.nodes[i]) == sum(y[j, k] for k in 1:length(instance.graph.arcs) if instance.graph.arcs[k].end_node == instance.graph.nodes[i])
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_flow_source[j in 1:num_of_snd_stage_paths],
-          sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.s)
-        - sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.s)
-        == 1
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_flow_sink[j in 1:num_of_snd_stage_paths],
-          sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].start_node == instance.t)
-        - sum(y[j, i] for i in 1:length(instance.graph.arcs) if instance.graph.arcs[i].end_node == instance.t)
-        == -1
-    )
+    # constraints for arcs in y[i] to create a path
+    for i in 1:num_of_snd_stage_paths
+        addPathConstraints(model, model[:y][i, :], instance.graph, instance.s_idx, instance.t_idx)
+    end
 
-    # arc inclusion neighbourhood constraints
-    JuMP.@constraint(
-        model,
-        second_stage_different_arcs_bound[j in 1:num_of_snd_stage_paths],
-          sum(y[j, i] - z[j,i] for i in 1:length(instance.graph.arcs) ) <= instance.k
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_z_vs_x[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
-        z[i, j] <= x[j]
-    )
-    JuMP.@constraint(
-        model,
-        second_stage_z_vs_y[i in 1:num_of_snd_stage_paths, j in 1:length(instance.graph.arcs)],
-        z[i, j] <= y[i, j]
-    )
+    # arc inclusion neighbourhood constraints for y[i]
+    for i in 1:num_of_snd_stage_paths
+        addNeighbourhoodConstraints(model, model[:x], model[:y][i, :], EXCLUSION, instance.k, length(instance.graph.arcs))
+    end
 
     JuMP.@objective(
         model,
@@ -264,7 +141,6 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         return RrspSolution(Path([]), Path([]), Inf)
     end
 
-    # first_stage_path::Path = Path([instance.graph.arcs[i] for i in 1:length(instance.graph.arcs) if JuMP.value(x[i]) > 0.5])  arcs as set
     first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
     second_stage_path::Path = argmin(
         p::Path -> sum(
