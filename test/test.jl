@@ -21,6 +21,13 @@ function testShortestPathSingleArcPaths()
     Test.@test p.arcs == [arc == min_arc for arc in instance.graph.arcs]
 end
 
+function testIncrementalShortestPathSingleArcPaths()
+    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
+    first_stage_path::rrsp.Path = rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)  # any first stage path as x
+    inc_path::rrsp.Path = rrsp.solveIncrementalShortestPath(instance, first_stage_path)
+    Test.@test first_stage_path.arcs == inc_path.arcs  # just one path to choose from
+end
+
 function testRrspContBudgetSinglePathUsingDagModel()
     instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_path.rrsp")
     solution::rrsp.RrspSolution = rrsp.getRrspContBudgetDag(instance)
@@ -50,5 +57,6 @@ end
 
 testShortestPathSinglePath()
 testShortestPathSingleArcPaths()
+testIncrementalShortestPathSingleArcPaths()
 testRrspContBudgetSinglePathUsingDagModel()
 testAspTreeDecomposition()
