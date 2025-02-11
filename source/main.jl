@@ -15,6 +15,7 @@ include("types.jl")
 include("deterministic.jl")
 include("incremental.jl")
 
+# TODO: add serialized instance validation
 function parseInstanceFromFile(file_name::String)::RrspInstance
     nodes::Vector{Node} = []
     uid_to_node_id::Dict{Integer, Integer} = Dict{Integer, Integer}()
@@ -48,43 +49,22 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
     arcs::Vector{Arc} = []
     s_idx::Integer = -1
     t_idx::Integer = -1
+    neighbourhood::NeighbourhoodType = NEIGHBOURHOOD_NOT_SET
     k::Integer = -1
     gamma::Float64 = 0.0
     open(file_name) do file
         params = split(readline(file))
         s_idx = parse(Int64, params[1])
         t_idx = parse(Int64, params[2])
-        k = parse(Int64, params[3])
-        gamma = parse(Float64, params[4])
+        neighbourhood = stringToNeighbourhoodType(params[3])
+        k = parse(Int64, params[4])
+        gamma = parse(Float64, params[5])
         for line in eachline(file)
             push!(arcs, deserializeArc(line))
         end
     end
 
-    return RrspInstance(Graph(nodes, arcs), s_idx, t_idx, k, gamma)
-end
-
-function solveShortestPath(g::Graph, s_idx::Integer, t_idx::Integer)::Path
-    optimizer = Cbc.Optimizer
-    model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
-
-    # x[i] --- is the i-th arc taken?
-    JuMP.@variable(model, x[i in 1:length(g.arcs)] >= 0)
-
-    addPathConstraints(model, model[:x], g, s_idx, t_idx)
-
-    JuMP.@objective(model, Min, sum(x[i]*g.arcs[i].cost.first for i in 1:length(g.arcs)))
-
-    JuMP.set_silent(model)
-    JuMP.optimize!(model)
-
-    if (!JuMP.has_values(model))
-        return Path([])
-    end
-
-    path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
-    return path
+    return RrspInstance(Graph(nodes, arcs), s_idx, t_idx, neighbourhood, k, gamma)
 end
 
 function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution

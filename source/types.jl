@@ -24,7 +24,19 @@ struct Arc
     cost::Cost
 end
 
-@enum NeighbourhoodType INCLUSION EXCLUSION SYM_DIFF
+@enum NeighbourhoodType INCLUSION EXCLUSION SYM_DIFF NEIGHBOURHOOD_NOT_SET
+
+function stringToNeighbourhoodType(str::AbstractString)::NeighbourhoodType
+    if str == "INC"
+        return INCLUSION
+    elseif str == "EXC"
+        return EXCLUSION
+    elseif str == "SYM_DIFF"
+        return SYM_DIFF
+    else
+        return NEIGHBOURHOOD_NOT_SET
+    end
+end
 
 struct Path
     arcs::Vector{Bool}  # path characteristic vector
@@ -61,6 +73,7 @@ struct RrspInstance
     graph::Graph
     s_idx::Integer
     t_idx::Integer
+    neighbourhood::NeighbourhoodType
     k::Integer
     gamma::Float64
 end
