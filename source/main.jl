@@ -14,6 +14,7 @@ include("types.jl")
 
 include("deterministic.jl")
 include("incremental.jl")
+include("recoverable.jl")
 
 # TODO: add serialized instance validation
 function parseInstanceFromFile(file_name::String)::RrspInstance
@@ -30,14 +31,14 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
         delta::Float64 = parse(Float64, dc)
 
         if (!haskey(uid_to_node_id, uid_n1))
-            push!(nodes, Node(uid_n1))
+            push!(nodes, Node(uid_n1, length(nodes) + 1))
             last_node_id += 1
             uid_to_node_id[uid_n1] = last_node_id
         end
         start_node::Node = nodes[uid_to_node_id[uid_n1]]
 
         if (!haskey(uid_to_node_id, uid_n2))
-            push!(nodes, Node(uid_n2))
+            push!(nodes, Node(uid_n2, length(nodes) + 1))
             last_node_id += 1
             uid_to_node_id[uid_n2] = last_node_id
         end
