@@ -10,6 +10,7 @@ import JuMP
 
 struct Node
     uid::Integer
+    idx::Integer
 end
 
 struct Cost

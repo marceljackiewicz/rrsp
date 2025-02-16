@@ -14,6 +14,8 @@ include("types.jl")
 
 include("deterministic.jl")
 include("incremental.jl")
+include("recoverable.jl")
+include("recoverable_robust.jl")
 
 # TODO: add serialized instance validation
 function parseInstanceFromFile(file_name::String)::RrspInstance
@@ -30,14 +32,14 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
         delta::Float64 = parse(Float64, dc)
 
         if (!haskey(uid_to_node_id, uid_n1))
-            push!(nodes, Node(uid_n1))
+            push!(nodes, Node(uid_n1, length(nodes) + 1))
             last_node_id += 1
             uid_to_node_id[uid_n1] = last_node_id
         end
         start_node::Node = nodes[uid_to_node_id[uid_n1]]
 
         if (!haskey(uid_to_node_id, uid_n2))
-            push!(nodes, Node(uid_n2))
+            push!(nodes, Node(uid_n2, length(nodes) + 1))
             last_node_id += 1
             uid_to_node_id[uid_n2] = last_node_id
         end
@@ -67,8 +69,7 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
     return RrspInstance(Graph(nodes, arcs), s_idx, t_idx, neighbourhood, k, gamma)
 end
 
-function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution
-    # TODO For now, inclusion neighbourhood only!
+function solveRrspContBudgetDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution
     optimizer = Cbc.Optimizer
     model = JuMP.Model()
     JuMP.set_optimizer(model, optimizer)
@@ -101,7 +102,7 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
 
     # arc inclusion neighbourhood constraints for y[i]
     for i in 1:num_of_snd_stage_paths
-        addNeighbourhoodConstraints(model, model[:x], model[:y][i, :], EXCLUSION, instance.k, length(instance.graph.arcs))
+        addNeighbourhoodConstraints(model, model[:x], model[:y][i, :], INCLUSION, instance.k, length(instance.graph.arcs))
     end
 
     JuMP.@objective(
@@ -131,15 +132,15 @@ function solveRrspContBudgedDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:num_of_snd_stage_paths]
     )
 
-    println("solution ", t, " ", RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model)))
+    # println("solution ", t, " ", RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model)))
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))
 end
 
-function getRrspContBudgetDag(instance::RrspInstance)::RrspSolution
+function solveRrspContBudgetDag(instance::RrspInstance)::RrspSolution
     best_sol::RrspSolution = RrspSolution(Path([]), Path([]), Inf)
     t::Integer = length(instance.graph.arcs) + 1
     for theta::Integer in 0:t
-        fixed_theta_sol::RrspSolution = solveRrspContBudgedDagForTheta(instance, theta)
+        fixed_theta_sol::RrspSolution = solveRrspContBudgetDagForTheta(instance, theta)
         if fixed_theta_sol.value < best_sol.value
             best_sol = fixed_theta_sol
         end
