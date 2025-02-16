@@ -48,6 +48,7 @@ function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
         return RrspSolution(Path([]), Path([]), Inf)
     end
 
-    path::Path = Path([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
-    return path
+    x_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    y_path::Path = Path([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    return RrspSolution(x_path, y_path, JuMP.objective_value(model))
 end

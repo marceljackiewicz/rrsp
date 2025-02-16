@@ -40,9 +40,13 @@ end
 =#
 function addAntiCyclicConstraints(mdl::JuMP.Model, x::Vector{JuMP.VariableRef}, g::Graph, s_idx::Integer, t_idx::Integer)::Nothing
     # Arcs entering s or leaving t can not be in a simple s-t path
-    JuMP.@constraint(mdl, [i in 1:length(g.arcs), g.arcs[i].end_node == g.nodes[s_idx] || g.arcs[i].start_node == g.nodes[t_idx]], x[i] == 0)
+    JuMP.@constraint(
+        mdl,
+        [i in 1:length(g.arcs); g.arcs[i].end_node == g.nodes[s_idx] || g.arcs[i].start_node == g.nodes[t_idx]],
+        x[i] == 0
+    )
 
-    # p represents ... ? (TODO)
+    # p represents the place in the ordering of nodes along the path; if the path contains a cycle, the ordering contains a contradiction
     p::Vector{JuMP.VariableRef} = JuMP.@variable(mdl, [i in 1:length(g.nodes)], integer=true, lower_bound=1.0, upper_bound=length(g.nodes))
     big_M::Float64 = length(g.nodes)
     JuMP.@constraint(mdl, [i in 1:length(g.arcs)], p[g.arcs[i].start_node.idx] + big_M*x[i] + 1 <= p[g.arcs[i].end_node.idx] + big_M)
