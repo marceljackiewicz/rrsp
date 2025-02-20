@@ -52,3 +52,34 @@ function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
     y_path::Path = Path([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
     return RrspSolution(x_path, y_path, JuMP.objective_value(model))
 end
+
+
+#= Returns approximation ratio of approximating RRSP in acyclic digraphs and discrete budget with RecSP.
+#  Works iff second stage cost for each arc is strictly > 0!
+=#
+function getRecSpToRrspAcyclicDiscreteBudgetApproxRatio(instance::RrspInstance)::Float64
+    ratio::Float64 = maximum(
+        (instance.graph.arcs[i].cost.second + instance.graph.arcs[i].cost.delta)/instance.graph.arcs[i].cost.second
+        for i in 1:length(instance.graph.arcs)
+    )
+
+    return ratio
+end
+
+#= Returns approximation ratio of approximating RRSP in acyclic digraphs and continuous budget with RecSP.
+#  Works iff second stage cost for each arc is strictly > 0!
+=#
+function getRecSpToRrspAcyclicContBudgetApproxRatio(instance::RrspInstance)::Float64
+    ratio_alpha::Float64 = maximum(
+        (instance.graph.arcs[i].cost.second + instance.graph.arcs[i].cost.delta)/instance.graph.arcs[i].cost.second
+        for i in 1:length(instance.graph.arcs)
+    )
+
+    total_deviation_possible::Float64 = sum(instance.graph.arcs[i].cost.delta for i in 1:length(instance.graph.arcs))
+    ratio_beta::Float64 = total_deviation_possible >= instance.gamma ? total_deviation_possible/instance.gamma : Inf
+
+    # TODO: add computing X^ from incremental and F(X^) from adversarial
+    ratio_gamma::Float64 = Inf
+
+    return min(ratio_alpha, ratio_beta, ratio_gamma)
+end
