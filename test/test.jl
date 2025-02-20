@@ -47,6 +47,12 @@ function testRrspGeneralContBudgetSinglePathUsingModel()
     Test.@test solution.second_stage_path.arcs == [1 for _ in 1:length(instance.graph.arcs)]
 end
 
+function testRrspApproxRatioAcyclic()
+    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
+    ratio_discrete::Float64 = rrsp.getRecSpToRrspAcyclicDiscreteBudgetApproxRatio(instance)
+    ratio_cont::Float64 = rrsp.getRecSpToRrspAcyclicContBudgetApproxRatio(instance)
+end
+
 function testAspTreeDecomposition()
     graphs::Array{String} = [
         "data/two_beads.rrsp",
@@ -74,3 +80,4 @@ testRecoverableShortestPathSingleArcPaths()
 testRrspDagContBudgetSinglePathUsingModel()
 testRrspGeneralContBudgetSinglePathUsingModel()
 testAspTreeDecomposition()
+testRrspApproxRatioAcyclic()
