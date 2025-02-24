@@ -8,7 +8,7 @@
 #= Returns first and second stage s-t paths and the optimal objective function value for Recoverable Shortest Path,
 #  to which the RRSP problem with interval uncertainty reduces to.
 #
-#  The paths are computed using compact ILP model.
+#  The paths are computed using compact MIP model.
 =#
 function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
     optimizer = Cbc.Optimizer
