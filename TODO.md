@@ -4,7 +4,6 @@
 - Representation functions (for printing solutions)
 - Add build script
 - Add tests
-- Add anti-cyclic constraints for model for general digraphs
 - Add ASP cont. budget combinatorial algorithm.
 - Add documentation using Documenter.jl
 - Robust (min max) SP for k = 0 case
