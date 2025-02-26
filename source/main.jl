@@ -56,14 +56,15 @@ function parseInstanceFromFile(file_name::String)::RrspInstance
     gamma::Float64 = 0.0
     open(file_name) do file
         params = split(readline(file))
-        s_idx = parse(Int64, params[1])
-        t_idx = parse(Int64, params[2])
         neighbourhood = stringToNeighbourhoodType(params[3])
         k = parse(Int64, params[4])
         gamma = parse(Float64, params[5])
         for line in eachline(file)
             push!(arcs, deserializeArc(line))
         end
+        # uid of s and t nodes can only be mapped to indices after the arcs are parsed
+        s_idx = uid_to_node_id[parse(Int64, params[1])]
+        t_idx = uid_to_node_id[parse(Int64, params[2])]
     end
 
     return RrspInstance(Graph(nodes, arcs), s_idx, t_idx, neighbourhood, k, gamma)

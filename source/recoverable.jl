@@ -150,6 +150,12 @@ function solveRecSpInAsp(instance::RrspInstance)::RrspSolution
         return (node.is_leaf && node.operation == NONE) || (!node.is_leaf && node.operation != NONE)
     end
 
+    function invalidNode(node::AspTreeNode)::Nothing
+        node.is_leaf = false
+        node.operation = NONE
+        return
+    end
+
     function hasNodeTwoLeaves(node::AspTreeNode)::Bool
         return isNodeValid(node) && !node.is_leaf && tree.nodes[node.left].is_leaf && tree.nodes[node.right].is_leaf
     end
@@ -202,39 +208,19 @@ function solveRecSpInAsp(instance::RrspInstance)::RrspSolution
         # opt second stage paths
         node.opt_second_stage_path[1] = createEmptyPath(length(instance.graph.arcs))
         for l in 2:instance.k
-            current_cost::Float64 = Inf
-            best_path::Path = createEmptyPath(length(instance.graph.arcs))
-            for j in 1:(l - 1)
-                # skip invalid paths
-                if sum(left.opt_second_stage_path[j].arcs == 0) || sum(right.opt_second_stage_path[l - j].arcs == 0)
-                    continue
-                end
-
-                p::Path = mergeTwoPaths(left.opt_second_stage_path[j], right.opt_second_stage_path[l - j])
-                c::Float64 = getPathCostSecondStageUpperBound(p)
-                if c < current_cost
-                    current_cost = c
-                    best_path = p
-                end
-            end
-            node.opt_second_stage_path[l] = best_path
+            node.opt_second_stage_path[l] = argmin(
+                p::Path -> getPathCostSecondStageUpperBound(p),
+                [mergeTwoPaths(left.opt_second_stage_path[j], right.opt_second_stage_path[l - j]) for j in 1:(l - 1)]
+            )
         end
 
-        # opt feasible pairs        
-        for l in 1:instance.k  # TODO check indices once again
-            best_solution::RrspSolution = createEmptyRrspSolution(length(instance.graph.arcs))
-            for j in 1:(1 + l)  # one more for l := 0
-                # skip invalid solutions
-                if left.opt_solution_paths[j].value == Inf || right.opt_solution_paths[l - j + 1].value == Inf
-                    continue
-                end
-
-                s::RrspSolution = mergeTwoRrspSolutions(left.opt_solution_paths[j], right.opt_solution_paths[l - j + 1])
-                if s.value < best_solution.value
-                    best_solution = s
-                end
-            end
-            node.opt_solution_paths[l] = best_solution
+        # opt feasible pairs
+        node.opt_solution_paths[1] = mergeTwoRrspSolutions(left.opt_solution_paths[1], right.opt_solution_paths[1])
+        for l in 2:(1 + instance.k)
+            node.opt_solution_paths[l] = argmin(
+                s::RrspSolution -> s.value,
+                [mergeTwoRrspSolutions(left.opt_solution_paths[j], right.opt_solution_paths[l - j + 1]) for j in 1:l]
+            )
         end
     end
 
@@ -251,16 +237,12 @@ function solveRecSpInAsp(instance::RrspInstance)::RrspSolution
                 end
 
                 # remove leaves from the tree
-                tree.nodes[tree.nodes[node_idx].left].operation = NONE  # just invalid the nodes
-                tree.nodes[tree.nodes[node_idx].left].is_leaf = false
-                tree.nodes[tree.nodes[node_idx].right].operation = NONE
-                tree.nodes[tree.nodes[node_idx].right].is_leaf = false
-
+                invalidNode(tree.nodes[tree.nodes[node_idx].left])  # just invalid the nodes
+                invalidNode(tree.nodes[tree.nodes[node_idx].right])
+                
                 # the node becomes a leaf then
                 tree.nodes[node_idx].is_leaf = true
                 tree.nodes[node_idx].operation = NONE
-                tree.nodes[node_idx].left = 0
-                tree.nodes[node_idx].right = 0
 
                 leaves_counter -= 1
             end
