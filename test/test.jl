@@ -53,24 +53,11 @@ function testRrspApproxRatioAcyclic()
     ratio_cont::Float64 = rrsp.getRecSpToRrspAcyclicContBudgetApproxRatio(instance)
 end
 
-function testAspTreeDecomposition()
-    graphs::Array{String} = [
-        "data/two_beads.rrsp",
-        "data/fixed_theta_counterexample.rrsp"
-    ]
-
-    for graph_file in graphs
-        instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile(graph_file)
-        solution::rrsp.RrspSolution = rrsp.solveRrspContBudgetDag(instance)
-        # println(solution)
-
-        tree::rrsp.AspTree = rrsp.getAspTreeDecomposition(instance.graph)
-        # println("tree------")
-        for n in tree.nodes
-            # println("\t", n)
-        end
-        # println("-----------", tree.root_idx)
-    end
+function testRecSpAsp()
+    instance::rrsp.RrspInstance = rrsp.parseInstanceFromFile("data/fixed_theta_counterexample.rrsp")
+    solution::rrsp.RrspSolution = rrsp.solveRecSpInAsp(instance)
+    Test.@test solution.first_stage_path.arcs == [1, 1, 0, 0, 0]
+    Test.@test solution.second_stage_path.arcs == [1, 1, 0, 0, 0]
 end
 
 testShortestPathSinglePath()
@@ -81,3 +68,4 @@ testRrspDagContBudgetSinglePathUsingModel()
 testRrspGeneralContBudgetSinglePathUsingModel()
 testAspTreeDecomposition()
 testRrspApproxRatioAcyclic()
+testRecSpAsp()

@@ -3,8 +3,6 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-import DataStructures
-
 import Cbc
 import JuMP
 
@@ -43,6 +41,10 @@ struct Path
     arcs::Vector{Bool}  # path characteristic vector
 end
 
+function createEmptyPath(arcs_cardinality::Integer)::Path
+    return Path([0 for _ in 1:arcs_cardinality])
+end
+
 struct Graph
     nodes::Vector{Node}
     arcs::Vector{Arc}
@@ -50,12 +52,12 @@ end
 
 @enum AspTreeOp SERIES PARALLEL NONE
 
-struct AspTreeNode
+mutable struct AspTreeNode
     s::Node
     t::Node
     left::Integer
     right::Integer
-    arcs::Array{Arc}
+    arc_idx::Integer  # the index of an arc if the node is a leaf
     operation::AspTreeOp
     is_leaf::Bool
 end
@@ -79,8 +81,18 @@ struct RrspInstance
     gamma::Float64
 end
 
-struct RrspSolution
+mutable struct RrspSolution
     first_stage_path::Path
     second_stage_path::Path
     value::Float64
+end
+
+function createEmptyRrspSolution(arcs_cardinality::Integer)::RrspSolution
+    return RrspSolution(createEmptyPath(arcs_cardinality), createEmptyPath(arcs_cardinality), Inf)
+end
+
+mutable struct AspNodeData
+    opt_first_stage_path::Path
+    opt_second_stage_path::Array{Path}
+    opt_solution_paths::Array{RrspSolution}
 end
