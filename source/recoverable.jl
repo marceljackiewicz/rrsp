@@ -90,8 +90,10 @@ end
 #  for Recoverable Shortest Path in Arc Series-Parallel graph.
 #
 #  The paths are computed using O(TODO) combinatorial algorithm.
+#  Inclusion neighbourhood is the only supported for now!
 =#
 function solveRecSpInAsp(instance::RrspInstance)::RrspSolution
+    @assert instance.neighbourhood == INCLUSION ["solveRecSpInAsp; exclusion and sym diff not implemented!"]
     tree::AspTree = getAspTreeDecomposition(instance.graph)
 
     # reserve storage for all data for nodes composition
