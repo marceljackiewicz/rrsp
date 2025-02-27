@@ -1,6 +1,5 @@
 push!(LOAD_PATH, "../src/")
 
-import Rrsp
-using Documenter
+using Documenter, Rrsp
 
-makedocs(sitename="My Documentation", remotes=nothing)
+makedocs(sitename="Robust Recoverable Shortest Path Solver", remotes=nothing)

@@ -1,9 +1,9 @@
-#= Robust Recoverable Shortest Path Solver
-#
-#  Module implementing recoverable version of Shortest Path.
-#
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
-=#
+""" Robust Recoverable Shortest Path Solver
+
+Module implementing recoverable version of Shortest Path.
+
+Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+"""
 
 include("tree_decomposition.jl")
 

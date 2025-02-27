@@ -15,8 +15,38 @@ include("incremental.jl")
 include("recoverable.jl")
 include("recoverable_robust.jl")
 
-# TODO: add serialized instance validation
+export parseInstanceFromFile
+
+"""
+    parseInstanceFromFile(file_name::String)::RrspInstance
+
+Return serialized RRSP instance given in `file_name`.
+The input file should conform to the following format:
+
+    s t N k G
+    <arc>
+    ...
+    <arc>
+
+where
+- `s` -- path start node id,
+- `t` -- path end node id,
+- `N` -- neighbourhood type; one of `INC`, `EXC`, `SYMDIFF`,
+- `k` -- neighbourhood size parameter,
+- `G` -- budget,
+and `<arc>` is a line serializing one arc:
+
+    n1 n2 c1 c2 d
+
+where
+- `n1` -- arc start node id,
+- `n2` -- arc end node id,
+- `c1` -- first stage cost,
+- `c2` -- second stage cost lower bound,
+- `d` -- second stage cost maximum deviation.
+"""
 function parseInstanceFromFile(file_name::String)::RrspInstance
+    # TODO: add serialized instance validation
     nodes::Vector{Node} = []
     uid_to_node_id::Dict{Integer, Integer} = Dict{Integer, Integer}()
     last_node_id::Integer = 0

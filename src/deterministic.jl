@@ -1,9 +1,9 @@
-#= Robust Recoverable Shortest Path Solver
-#
-# Module implementing deterministic version of Shortest Path.
-#
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
-=#
+""" Robust Recoverable Shortest Path Solver
+
+Module implementing deterministic version of Shortest Path.
+
+Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+"""
 
 #= Adds constraints to @a mdl for decision variables in @a x to create an s-t path in the graph @a g.
 #  
