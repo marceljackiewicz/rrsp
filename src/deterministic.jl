@@ -5,10 +5,6 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-import JuMP
-
-include("types.jl")
-
 #= Adds constraints to @a mdl for decision variables in @a x to create an s-t path in the graph @a g.
 #  
 # The added constraints are anonymous, since there might be many variables modeling paths in a model

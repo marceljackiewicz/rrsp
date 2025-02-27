@@ -3,9 +3,7 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-module rrsp
-
-import DataStructures
+module Rrsp
 
 import Cbc
 import JuMP
@@ -174,4 +172,4 @@ function solveRrspContBudgetAsp(instance::RrspInstance)::RrspSolution
     end
 end
 
-end  # module rrsp
+end  # module Rrsp
