@@ -3,9 +3,6 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-import Cbc
-import JuMP
-
 struct Node
     uid::Integer
     idx::Integer
