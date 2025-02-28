@@ -6,9 +6,8 @@
 =#
 
 function evaluateSecondStagePathContBudget(instance::RrspInstance, y::Path)::Float64
-    optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     JuMP.@variable(model, u[i in 1:length(y.arcs)] >= 0)
     JuMP.@constraint(model, [i in 1:length(y.arcs)], u[i] <= instance.graph.arcs[i].cost.delta)
@@ -42,9 +41,8 @@ If the graph is a DAG, then use solveRrspContBudgetDag function.
 The paths are computed using compact MIP model.
 """
 function solveRrspContBudget(instance::RrspInstance)::RrspSolution
-    optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     second_stage_paths_num::Integer = length(instance.graph.arcs) + 1
 
@@ -142,9 +140,8 @@ function solveRrspContBudget(instance::RrspInstance)::RrspSolution
 end
 
 function solveRrspContBudgetDagForTheta(instance::RrspInstance, t::Integer)::RrspSolution
-    optimizer = Cbc.Optimizer
     model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     theta::Float64 = t > 0 ? 1/t : 0.0
     num_of_snd_stage_paths = t > 0 ? t : 1

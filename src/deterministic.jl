@@ -48,9 +48,8 @@ The path is stored in `RrspSolution.first_stage_path` of the returned structure 
 The path is computed using LP model.
 """
 function solveDeterministicShortestPath(instance::RrspInstance)::RrspSolution
-    optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     arc_num::Integer = length(instance.graph.arcs)
 

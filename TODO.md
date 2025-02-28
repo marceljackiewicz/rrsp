@@ -1,5 +1,4 @@
 # Backlog
-- Make "solver agnostic"
 - Rename Path -> RrspPath
 - Visualize graphs
 - Representation functions (for printing solutions)

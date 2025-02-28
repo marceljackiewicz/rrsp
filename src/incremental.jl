@@ -72,9 +72,8 @@ However, the first stage cost doesn't affect the `value` of the solution.
 The path is computed using compact MIP model.
 """
 function solveIncrementalShortestPath(instance::RrspInstance, x::Path)::RrspSolution
-    optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     arc_num::Integer = length(instance.graph.arcs)
 
