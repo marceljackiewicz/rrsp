@@ -7,11 +7,15 @@ Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 
 include("tree_decomposition.jl")
 
-#= Returns first and second stage s-t paths and the optimal objective function value for Recoverable Shortest Path,
-#  to which the RRSP problem with interval uncertainty reduces to.
-#
-#  The paths are computed using compact MIP model.
-=#
+"""
+    solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
+
+Returns optimal first and second stage shortest ``s-t`` path in the graph `instance.graph` for Recoverable Shortest Path,
+to which the RRSP problem with interval uncertainty reduces to.
+The nodes ``s`` and ``t`` are given by `instance.s_idx`, `instance.t_idx` indices in `instance.graph.arcs` array.
+
+The paths are computed using compact MIP model.
+"""
 function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
     optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
@@ -86,14 +90,21 @@ function getRecSpToRrspAcyclicContBudgetApproxRatio(instance::RrspInstance)::Flo
     return min(ratio_alpha, ratio_beta, ratio_gamma)
 end
 
-#= Returns first and second stage s-t paths and the optimal objective function value
-#  for Recoverable Shortest Path in Arc Series-Parallel graph.
-#
-#  The paths are computed using O(TODO) combinatorial algorithm.
-#  Inclusion neighbourhood is the only supported for now!
-=#
-function solveRecSpInAsp(instance::RrspInstance)::RrspSolution
-    @assert instance.neighbourhood == INCLUSION ["solveRecSpInAsp; exclusion and sym diff not implemented!"]
+"""
+    solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
+
+Returns optimal first and second stage shortest ``s-t`` path in the graph `instance.graph`
+for Recoverable Shortest Path in Arc Series-Parallel (ASP) graph.
+
+The `instance.graph` is assumed to be ASP. Hence, it's not validated further.
+If this is not the case, then the behaviour and the return value of this function are undefined.
+
+The paths are computed using combinatorial algoritm.
+
+NOTE: The only supported neighbourhood is **inclusion** for now!
+"""
+function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
+    @assert instance.neighbourhood == INCLUSION ["solveRecoverableShortestPathInAsp; exclusion and sym diff not implemented!"]
     tree::AspTree = getAspTreeDecomposition(instance.graph)
 
     # reserve storage for all data for nodes composition

@@ -32,6 +32,14 @@ where
 - `c1` -- first stage cost,
 - `c2` -- second stage cost lower bound,
 - `d` -- second stage cost maximum deviation.
+
+Example:
+
+    1 3 INC 1 100.0
+    1 2 0.0 50.0 10.0
+    1 2 0.0 0.0 100.0
+    2 3 0.0 20.0 30.0
+    2 3 0.0 40.0 0.0
 """
 function parseInstanceFromFile(file_name::String)::RrspInstance
     # TODO: add serialized instance validation

@@ -37,28 +37,35 @@ function addPathConstraints(mdl::JuMP.Model, x::Vector{JuMP.VariableRef}, g::Gra
     return
 end
 
-#= Returns a shortest s-t path in the graph @a g, where s and t are nodes given by @a s_idx, t_idx indices in @a g arcs array.
-#
-#  The path is computed using LP model.
-=#
-function solveShortestPath(g::Graph, s_idx::Integer, t_idx::Integer)::Path
+"""
+    solveDeterministicShortestPath(instance::RrspInstance)::RrspSolution
+
+Returns a shortest ``s-t`` path in the graph `instance.graph` with respect to `Cost.first` costs,
+where ``s`` and ``t`` are nodes given by `instance.s_idx`, `instance.t_idx` indices in `instance.graph.arcs` array.
+
+The path is stored in `RrspSolution.first_stage_path` of the returned structure and its cost is assigned to `RrspSolution.value`.
+
+The path is computed using LP model.
+"""
+function solveDeterministicShortestPath(instance::RrspInstance)::RrspSolution
     optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
     JuMP.set_optimizer(model, optimizer)
 
-    # x[i] --- is the i-th arc taken?
-    JuMP.@variable(model, x[i in 1:length(g.arcs)] >= 0)
-    addPathConstraints(model, model[:x], g, s_idx, t_idx)
+    arc_num::Integer = length(instance.graph.arcs)
 
-    JuMP.@objective(model, Min, sum(x[i]*g.arcs[i].cost.first for i in 1:length(g.arcs)))
+    # x[i] --- is the i-th arc taken?
+    JuMP.@variable(model, x[i in 1:arc_num] >= 0)
+    addPathConstraints(model, model[:x], instance.graph, instance.s_idx, instance.t_idx)
+
+    JuMP.@objective(model, Min, sum(x[i]*instance.graph.arcs[i].cost.first for i in 1:arc_num))
 
     JuMP.set_silent(model)
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        return Path([])
+        return createEmptyRrspSolution(arc_num)
     end
 
-    path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(g.arcs)])
-    return path
+    return RrspSolution(Path([JuMP.value(x[i]) > 0.5 for i in 1:arc_num]), Path([]), JuMP.objective_value(model))
 end

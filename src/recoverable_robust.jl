@@ -29,12 +29,18 @@ function evaluateSecondStagePathContBudget(instance::RrspInstance, y::Path)::Flo
     return JuMP.value(t)
 end
 
-#= Returns first and second stage s-t paths and the optimal objective function value
-#  for RRSP with continuous budget in general digraphs.
-#  Use another function for DAGs!
-#
-#  The paths are computed using compact ILP model.
-=#
+"""
+    solveRrspContBudget(instance::RrspInstance)::RrspSolution
+
+Returns optimal first and second stage shortest ``s-t`` path in the graph `instance.graph` for Recoverable Robust Shortest Path
+with continuous budgeted uncertainty.
+The nodes ``s`` and ``t`` are given by `instance.s_idx`, `instance.t_idx` indices in `instance.graph.arcs` array.
+The maximum budget value is equal to `instance.gamma`.
+
+If the graph is a DAG, then use solveRrspContBudgetDag function.
+
+The paths are computed using compact MIP model.
+"""
 function solveRrspContBudget(instance::RrspInstance)::RrspSolution
     optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
@@ -75,7 +81,7 @@ function solveRrspContBudget(instance::RrspInstance)::RrspSolution
 
     #= v[i,j] linearizes (to represent) the product of y[i,j]*lambda[i] =#
     JuMP.@variable(model, v[i in 1:second_stage_paths_num, j in 1:length(instance.graph.arcs)] >= 0)
-    big_M::Float64 = 10e6  # ???
+    big_M::Float64 = 10e6  # TODO: find minimal value for big_M
     #= y = 0 -> v = 0 =#
     JuMP.@constraint(
         model,
@@ -112,7 +118,7 @@ function solveRrspContBudget(instance::RrspInstance)::RrspSolution
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        return RrspSolution(Path([]), Path([]), Inf)
+        return createEmptyRrspSolution(length(instance.graph.arcs))
     end
 
     first_stage_path::Path = Path([JuMP.value(x[j]) > 0.5 for j in 1:length(instance.graph.arcs)])
@@ -185,7 +191,7 @@ function solveRrspContBudgetDagForTheta(instance::RrspInstance, t::Integer)::Rrs
 
     if (!JuMP.has_values(model))
         println("no primal solution", t)
-        return RrspSolution(Path([]), Path([]), Inf)
+        return createEmptyRrspSolution(length(instance.graph.arcs))
     end
 
     first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
@@ -201,8 +207,20 @@ function solveRrspContBudgetDagForTheta(instance::RrspInstance, t::Integer)::Rrs
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))
 end
 
+
+"""
+    solveRrspContBudgetDag(instance::RrspInstance)::RrspSolution
+
+Returns optimal first and second stage shortest ``s-t`` path in the graph `instance.graph` for Recoverable Robust Shortest Path
+with continuous budgeted uncertainty when `instance.graph` is a directed acyclic graph.
+The nodes ``s`` and ``t`` are given by `instance.s_idx`, `instance.t_idx` indices in `instance.graph.arcs` array.
+The maximum budget value is equal to `instance.gamma`.
+
+The paths are computed by solving a family of ``m + 1`` compact MIP models, where ``m`` is the number of arcs in the DAG.
+Since the graph is acyclic, the model does not contain anti-cyclic constraints, unlike the model for general digraphs.
+"""
 function solveRrspContBudgetDag(instance::RrspInstance)::RrspSolution
-    best_sol::RrspSolution = RrspSolution(Path([]), Path([]), Inf)
+    best_sol::RrspSolution = createEmptyRrspSolution(length(instance.graph.arcs))
     t::Integer = length(instance.graph.arcs) + 1
     for theta::Integer in 0:t
         fixed_theta_sol::RrspSolution = solveRrspContBudgetDagForTheta(instance, theta)

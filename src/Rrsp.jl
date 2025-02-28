@@ -9,13 +9,25 @@ import Cbc
 import JuMP
 
 include("types.jl")
+export Path
+export RrspInstance
+export RrspSolution
+
+include("parsing.jl")
+export parseInstanceFromFile
 
 include("deterministic.jl")
-include("incremental.jl")
-include("recoverable.jl")
-include("recoverable_robust.jl")
-include("parsing.jl")
+export solveDeterministicShortestPath
 
-export parseInstanceFromFile
+include("incremental.jl")
+export solveIncrementalShortestPath
+
+include("recoverable.jl")
+export solveRecoverableShortestPath
+export solveRecoverableShortestPathInAsp
+
+include("recoverable_robust.jl")
+export solveRrspContBudget
+export solveRrspContBudgetDag
 
 end  # module Rrsp

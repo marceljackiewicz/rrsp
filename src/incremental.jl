@@ -54,32 +54,46 @@ function addAntiCyclicConstraints(mdl::JuMP.Model, x::Vector{JuMP.VariableRef}, 
     return
 end
 
-#= Returns a shortest s-t path in the graph @a g, where s and t are nodes given by @a s_idx, t_idx indices in @a g arcs array.
-#
-#  The path is computed using LP model.
-=#
-function solveIncrementalShortestPath(instance::RrspInstance, x::Path)::Path
+"""
+    solveIncrementalShortestPath(instance::RrspInstance, x::Path)::RrspSolution
+
+Returns a shortest ``s-t`` path in the graph `instance.graph` with respect to `Cost.second` costs,
+where ``s`` and ``t`` are nodes given by `instance.s_idx`, `instance.t_idx` indices in `instance.graph.arcs` array.
+
+If the costs for incremental problem are different than second stage costs lower bounds, they should be set before calling the function.
+
+The path is in the neighbourhood of the path `x`; the neighbourhood type is selected with `instance.neighbourhood`
+and the neighbourhood size with `instance.k` values.
+
+The path is stored in `RrspSolution.second_stage_path` of the returned structure and its cost is assigned to `RrspSolution.value`.
+For integrality of the solution, the input parameter path `x` is stored in `RrspSolution.first_stage_path`.
+However, the first stage cost doesn't affect the `value` of the solution.
+
+The path is computed using compact MIP model.
+"""
+function solveIncrementalShortestPath(instance::RrspInstance, x::Path)::RrspSolution
     optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
     JuMP.set_optimizer(model, optimizer)
 
+    arc_num::Integer = length(instance.graph.arcs)
+
     # y[i] --- is the i-th arc taken?
-    JuMP.@variable(model, y[i in 1:length(instance.graph.arcs)] >= 0)
+    JuMP.@variable(model, y[i in 1:arc_num], Bin)
 
     addPathConstraints(model, model[:y], instance.graph, instance.s_idx, instance.t_idx)
-    addNeighbourhoodConstraints(model, x.arcs, model[:y], instance.neighbourhood, instance.k, length(instance.graph.arcs))
+    addNeighbourhoodConstraints(model, x.arcs, model[:y], instance.neighbourhood, instance.k, arc_num)
 
     JuMP.@objective(
-        model, Min, sum(y[i]*instance.graph.arcs[i].cost.second for i in 1:length(instance.graph.arcs))  # assume the adversary set the cost
+        model, Min, sum(y[i]*instance.graph.arcs[i].cost.second for i in 1:arc_num)  # assume the adversary set the cost
     )
 
     JuMP.set_silent(model)
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        return Path([])
+        return createEmptyRrspSolution(arc_num)
     end
 
-    path::Path = Path([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
-    return path
+    return RrspSolution(x, Path([JuMP.value(y[i]) > 0.5 for i in 1:arc_num]), JuMP.objective_value(model))
 end
