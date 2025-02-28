@@ -20,7 +20,7 @@ Use `Pkg` package manager to install this package for a session.
     - `import Rrsp`
 
 ### Dependencies
-The only pacakge dependency of `Rrsp` is [JuMP](https://jump.dev/JuMP.jl/stable/).
+The only package dependency of `Rrsp` is [JuMP](https://jump.dev/JuMP.jl/stable/).
 Users are responsible for installing MIP solvers they want to use with `Rrsp`.
 
 ## API Data Types
@@ -36,9 +36,15 @@ Path
 ```
 To fetch the arcs of which the solution path consist you can use the `Path.arcs` vector.
 
-## Setting the Solver
+## Setting the Optimizer
+Before using the solver you need to supply the optimizer of your choice.
+This is done by simple assignment to the global variable `Rrsp.optimizer`.
+For example, if we want to use Cbc optimizer to solve MIP models we must have assigned
 
-For now choosing the solver is not allowed.
+    Rrsp.optimizer = Cbc.Optimizer
+
+somewhere before using `Rrsp` API.
+The optimizer can be set dynamically between calls to the API, for example to test solving times using different optimizers. 
 
 ## Parsing Input
 The instance of RRSP is assumed to be given in a text file.
@@ -79,12 +85,18 @@ solveRrspContBudgetDag
 ```
 
 ## Working Example
-To illustrate the use of API we present an example of solving a small problem instance.
+To illustrate the use of API we present an example of solving a small problem instance. In this example we use Cbc for solving MIP models.
 
 Assume that there exists a file under `data/instance.rrsp` path containing a problem instance written down as shown in Parsing Input section.\
 Make sure `Rrsp` definitions are visible. Use `import` to avoid name collisions in your project. If not an issue, you can use `using`.
 
     julia> import Rrsp
+
+Import Cbc optimizer package and use it to set `Rrsp` optimizer (you can choose any `JuMP` conforming optimizer able to solve MIP models):
+
+    julia> import Cbc
+
+    julia> Rrsp.optimizer = Cbc.Optimizer
 
 Parse the file to create an instance object:
 
