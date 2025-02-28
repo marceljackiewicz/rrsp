@@ -17,9 +17,8 @@ The nodes ``s`` and ``t`` are given by `instance.s_idx`, `instance.t_idx` indice
 The paths are computed using compact MIP model.
 """
 function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
-    optimizer = Cbc.Optimizer
     model::JuMP.Model = JuMP.Model()
-    JuMP.set_optimizer(model, optimizer)
+    JuMP.set_optimizer(model, Rrsp.optimizer)
 
     # x[i], y[i] --- is the i-th arc in the first and second stage path, respectively, taken?
     JuMP.@variable(model, x[i in 1:length(instance.graph.arcs)], Bin)

@@ -5,8 +5,9 @@
 
 module Rrsp
 
-import Cbc
 import JuMP
+
+optimizer::Any = nothing  # should be set before using the solver
 
 include("types.jl")
 export Path

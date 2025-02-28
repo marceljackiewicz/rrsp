@@ -3,8 +3,11 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
+import Cbc
 import Rrsp
 import Test
+
+Rrsp.optimizer = Cbc.Optimizer
 
 function testShortestPathSinglePath()
     instance::Rrsp.RrspInstance = Rrsp.parseInstanceFromFile("data/single_path.rrsp")
