@@ -20,6 +20,11 @@ struct Arc
     cost::Cost
 end
 
+struct Graph
+    nodes::Vector{Node}
+    arcs::Vector{Arc}
+end
+
 @enum NeighbourhoodType INCLUSION EXCLUSION SYM_DIFF NEIGHBOURHOOD_NOT_SET
 
 function stringToNeighbourhoodType(str::AbstractString)::NeighbourhoodType
@@ -34,6 +39,15 @@ function stringToNeighbourhoodType(str::AbstractString)::NeighbourhoodType
     end
 end
 
+"""
+    struct Path
+        arcs::Vector{Bool}
+    end
+
+The structure for encapsulating a path of the problem instance graph.
+Paths are represented by characteristic vectors of the arc set of the instance graph
+as this representation allows for easier constraints formulation in MIP modeling -- the principal aspect of the solver.
+"""
 struct Path
     arcs::Vector{Bool}  # path characteristic vector
 end
@@ -42,9 +56,52 @@ function createEmptyPath(arcs_cardinality::Integer)::Path
     return Path([0 for _ in 1:arcs_cardinality])
 end
 
-struct Graph
-    nodes::Vector{Node}
-    arcs::Vector{Arc}
+"""
+    struct RrspInstance
+        graph::Graph
+        s_idx::Integer
+        t_idx::Integer
+        neighbourhood::NeighbourhoodType
+        k::Integer
+        gamma::Float64
+    end
+
+The structure containing serialized RRSP problem instance.
+It can be used as an opaque type, since the solving functions only input parameter is the instance itself.
+"""
+struct RrspInstance
+    graph::Graph
+    s_idx::Integer
+    t_idx::Integer
+    neighbourhood::NeighbourhoodType
+    k::Integer
+    gamma::Float64
+end
+
+"""
+    struct RrspSolution
+        first_stage_path::Path
+        second_stage_path::Path
+        value::Float64
+    end
+
+The structure containing optimal pair of paths and the optimal value of the solution to the RRSP problems.
+
+Every solver API function returns `RrspSolution` structure object.
+When solution is infeasible, the `RrspSolution` structure is returned *empty* -- the paths structures
+are initialized to ``\\mathbf{0}`` vectors and `value` is `Inf`.
+
+For convenience, the same structure is used when returning the solution for RRSP subproblems,
+which concern only one optimal path. In this case, as to which path of the set is given by function docstring.
+"""
+mutable struct RrspSolution
+    first_stage_path::Path
+    second_stage_path::Path
+    value::Float64
+end
+
+function createEmptyRrspSolution(arcs_cardinality::Integer)::RrspSolution
+    return RrspSolution(createEmptyPath(arcs_cardinality), createEmptyPath(arcs_cardinality), Inf)
 end
 
 @enum AspTreeOp SERIES PARALLEL NONE
@@ -67,25 +124,6 @@ end
 struct AspComponent
     s::Node
     t::Node
-end
-
-struct RrspInstance
-    graph::Graph
-    s_idx::Integer
-    t_idx::Integer
-    neighbourhood::NeighbourhoodType
-    k::Integer
-    gamma::Float64
-end
-
-mutable struct RrspSolution
-    first_stage_path::Path
-    second_stage_path::Path
-    value::Float64
-end
-
-function createEmptyRrspSolution(arcs_cardinality::Integer)::RrspSolution
-    return RrspSolution(createEmptyPath(arcs_cardinality), createEmptyPath(arcs_cardinality), Inf)
 end
 
 mutable struct AspNodeData

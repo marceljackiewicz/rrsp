@@ -3,28 +3,27 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-include("../src/Rrsp.jl")
-
+import Rrsp
 import Test
 
 function testShortestPathSinglePath()
     instance::Rrsp.RrspInstance = Rrsp.parseInstanceFromFile("data/single_path.rrsp")
-    p::Rrsp.Path = Rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)
-    Test.@test p.arcs == [1 for _ in 1:length(instance.graph.arcs)]
+    sol::Rrsp.RrspSolution = Rrsp.solveDeterministicShortestPath(instance)
+    Test.@test sol.first_stage_path.arcs == [1 for _ in 1:length(instance.graph.arcs)]
 end
 
 function testShortestPathSingleArcPaths()
     instance::Rrsp.RrspInstance = Rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
-    p::Rrsp.Path = Rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)
+    sol::Rrsp.RrspSolution = Rrsp.solveDeterministicShortestPath(instance)
     min_arc::Rrsp.Arc = argmin(arc -> arc.cost.first, instance.graph.arcs)
-    Test.@test p.arcs == [arc == min_arc for arc in instance.graph.arcs]
+    Test.@test sol.first_stage_path.arcs == [arc == min_arc for arc in instance.graph.arcs]
 end
 
 function testIncrementalShortestPathSingleArcPaths()
     instance::Rrsp.RrspInstance = Rrsp.parseInstanceFromFile("data/single_arc_paths.rrsp")
-    first_stage_path::Rrsp.Path = Rrsp.solveShortestPath(instance.graph, instance.s_idx, instance.t_idx)  # any first stage path as x
-    inc_path::Rrsp.Path = Rrsp.solveIncrementalShortestPath(instance, first_stage_path)
-    Test.@test first_stage_path.arcs == inc_path.arcs  # just one path to choose from
+    sol_det::Rrsp.RrspSolution = Rrsp.solveDeterministicShortestPath(instance)  # any first stage path as x
+    sol_inc::Rrsp.RrspSolution = Rrsp.solveIncrementalShortestPath(instance, sol_det.first_stage_path)
+    Test.@test sol_det.first_stage_path.arcs == sol_inc.first_stage_path.arcs  # just one path to choose from
 end
 
 function testRecoverableShortestPathSingleArcPaths()
@@ -66,7 +65,7 @@ end
 
 function testRecSpAsp()
     instance::Rrsp.RrspInstance = Rrsp.parseInstanceFromFile("data/fixed_theta_counterexample.rrsp")
-    solution_combinatorial::Rrsp.RrspSolution = Rrsp.solveRecSpInAsp(instance)
+    solution_combinatorial::Rrsp.RrspSolution = Rrsp.solveRecoverableShortestPathInAsp(instance)
     solution_model::Rrsp.RrspSolution = Rrsp.solveRecoverableShortestPath(instance)
 
     Test.@test areTwoSolutionsEqual(solution_combinatorial, solution_model)

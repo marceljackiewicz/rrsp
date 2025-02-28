@@ -1,7 +1,8 @@
 # Backlog
 - Make "solver agnostic"
-- Add documentation using Documenter.jl
+- Rename Path -> RrspPath
 - Visualize graphs
 - Representation functions (for printing solutions)
-- Add ASP cont. budget combinatorial algorithm.
+- ASP cont. budget combinatorial algorithm
+- DAG combinatorial algorithm for recoverable
 - Robust (min max) SP for k = 0 case

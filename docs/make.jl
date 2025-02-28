@@ -1,3 +1,5 @@
-using Documenter
+push!(LOAD_PATH, "../src/")
 
-makedocs(sitename="My Documentation")
+using Documenter, Rrsp
+
+makedocs(sitename="Robust Recoverable Shortest Path Solver", remotes=nothing)
