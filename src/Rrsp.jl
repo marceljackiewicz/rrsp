@@ -1,6 +1,6 @@
 #= Robust Recoverable Shortest Path Solver
 #
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+#  Authors: Marcel Jackiewicz
 =#
 
 module Rrsp

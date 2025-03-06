@@ -2,7 +2,7 @@
 
 Module implementing recoverable version of Shortest Path.
 
-Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+Authors: Marcel Jackiewicz
 """
 
 include("tree_decomposition.jl")

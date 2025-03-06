@@ -1,6 +1,6 @@
 name = "Rrsp"
 uuid = "0a704f38-5b8f-4fb6-9591-2aeb036c3e30"
-authors = ["Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński"]
+authors = ["Marcel Jackiewicz"]
 version = "0.1.0"
 
 [deps]

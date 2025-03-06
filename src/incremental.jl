@@ -2,7 +2,7 @@
 #
 #  Module implementing incremental version of Shortest Path.
 #
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+#  Authors: Marcel Jackiewicz
 =#
 
 #= Adds constraints to @a mdl for the path @a y to be in the @a neighbourhood_type neighbourhood, of the path @a x, of the size @a k.

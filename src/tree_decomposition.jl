@@ -2,7 +2,7 @@
 #
 #  Module implementing binary tree decomposition of arc series-parallel graphs.
 #
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+#  Authors: Marcel Jackiewicz
 =#
 
 function getAspTreeDecomposition(g::Graph)::AspTree
