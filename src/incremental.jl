@@ -71,7 +71,7 @@ However, the first stage cost doesn't affect the `value` of the solution.
 
 The path is computed using compact MIP model.
 """
-function solveIncrementalShortestPath(instance::RrspInstance, x::Path)::RrspSolution
+function solveIncrementalShortestPath(instance::RrspInstance, x::RrspPath)::RrspSolution
     model::JuMP.Model = JuMP.Model()
     JuMP.set_optimizer(model, Rrsp.optimizer)
 
@@ -94,5 +94,5 @@ function solveIncrementalShortestPath(instance::RrspInstance, x::Path)::RrspSolu
         return createEmptyRrspSolution(arc_num)
     end
 
-    return RrspSolution(x, Path([JuMP.value(y[i]) > 0.5 for i in 1:arc_num]), JuMP.objective_value(model))
+    return RrspSolution(x, RrspPath([JuMP.value(y[i]) > 0.5 for i in 1:arc_num]), JuMP.objective_value(model))
 end

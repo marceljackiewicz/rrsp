@@ -30,11 +30,11 @@ RrspInstance
 RrspSolution
 ```
 
-The `Path` structure, the building block of the output object type, is left transparent:
+The `RrspPath` structure, the building block of the output object type, is left transparent:
 ```@docs
-Path
+RrspPath
 ```
-To fetch the arcs of which the solution path consist you can use the `Path.arcs` vector.
+To fetch the arcs of which the solution path consist you can use the `RrspPath.arcs` vector.
 
 ## Setting the Optimizer
 Before using the solver you need to supply the optimizer of your choice.
