@@ -2,7 +2,7 @@
 
 Module implementing deterministic version of Shortest Path.
 
-Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+Authors: Marcel Jackiewicz
 """
 
 #= Adds constraints to @a mdl for decision variables in @a x to create an s-t path in the graph @a g.

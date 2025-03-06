@@ -1,5 +1,4 @@
 # Robust Recoverable Shortest Path Solver
-Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 
 This repository contains implementation of algorithms, in the form of [Julia](https://julialang.org/) package, for solving RRSP problem described in the following articles
 
@@ -11,9 +10,10 @@ This repository contains implementation of algorithms, in the form of [Julia](ht
 
 ## Documentation
 
+(To be hosted as github page)
+
 The package documentation is generated using [Documenter.jl](https://documenter.juliadocs.org/stable/) package.
-We opted for not keeping script generated content in the repository (aside from package configuration) and since bitbucket doesn't allow hosting web pages currently, you can generate the documentation locally.
-To do so, clone the repository, enter `Rrsp/docs` directory and use
+To generate the documentation clone the repository, enter `Rrsp/docs` directory and use
 
     $ julia --project make.jl
 

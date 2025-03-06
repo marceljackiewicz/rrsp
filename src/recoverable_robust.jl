@@ -2,7 +2,7 @@
 #
 #  Module implementing recoverable robust version of Shortest Path.
 #
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+#  Authors: Marcel Jackiewicz
 =#
 
 function evaluateSecondStagePathContBudget(instance::RrspInstance, y::RrspPath)::Float64

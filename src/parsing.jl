@@ -2,7 +2,7 @@
 #
 #  Module implementing parsing the problem instances.
 #
-#  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
+#  Authors: Marcel Jackiewicz
 =#
 
 """
