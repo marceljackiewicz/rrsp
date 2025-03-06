@@ -40,7 +40,7 @@ function stringToNeighbourhoodType(str::AbstractString)::NeighbourhoodType
 end
 
 """
-    struct Path
+    struct RrspPath
         arcs::Vector{Bool}
     end
 
@@ -48,12 +48,12 @@ The structure for encapsulating a path of the problem instance graph.
 Paths are represented by characteristic vectors of the arc set of the instance graph
 as this representation allows for easier constraints formulation in MIP modeling -- the principal aspect of the solver.
 """
-struct Path
+struct RrspPath
     arcs::Vector{Bool}  # path characteristic vector
 end
 
-function createEmptyPath(arcs_cardinality::Integer)::Path
-    return Path([0 for _ in 1:arcs_cardinality])
+function createEmptyPath(arcs_cardinality::Integer)::RrspPath
+    return RrspPath([0 for _ in 1:arcs_cardinality])
 end
 
 """
@@ -80,8 +80,8 @@ end
 
 """
     struct RrspSolution
-        first_stage_path::Path
-        second_stage_path::Path
+        first_stage_path::RrspPath
+        second_stage_path::RrspPath
         value::Float64
     end
 
@@ -95,8 +95,8 @@ For convenience, the same structure is used when returning the solution for RRSP
 which concern only one optimal path. In this case, as to which path of the set is given by function docstring.
 """
 mutable struct RrspSolution
-    first_stage_path::Path
-    second_stage_path::Path
+    first_stage_path::RrspPath
+    second_stage_path::RrspPath
     value::Float64
 end
 
@@ -127,7 +127,7 @@ struct AspComponent
 end
 
 mutable struct AspNodeData
-    opt_first_stage_path::Path
-    opt_second_stage_path::Array{Path}
+    opt_first_stage_path::RrspPath
+    opt_second_stage_path::Array{RrspPath}
     opt_solution_paths::Array{RrspSolution}
 end

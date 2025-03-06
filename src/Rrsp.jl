@@ -10,7 +10,7 @@ import JuMP
 optimizer::Any = nothing  # should be set before using the solver
 
 include("types.jl")
-export Path
+export RrspPath
 export RrspInstance
 export RrspSolution
 

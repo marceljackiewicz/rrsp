@@ -66,5 +66,5 @@ function solveDeterministicShortestPath(instance::RrspInstance)::RrspSolution
         return createEmptyRrspSolution(arc_num)
     end
 
-    return RrspSolution(Path([JuMP.value(x[i]) > 0.5 for i in 1:arc_num]), Path([]), JuMP.objective_value(model))
+    return RrspSolution(RrspPath([JuMP.value(x[i]) > 0.5 for i in 1:arc_num]), RrspPath([]), JuMP.objective_value(model))
 end

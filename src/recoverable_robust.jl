@@ -5,7 +5,7 @@
 #  Authors: Marcel Jackiewicz, Adam Kasperski, Paweł Zieliński
 =#
 
-function evaluateSecondStagePathContBudget(instance::RrspInstance, y::Path)::Float64
+function evaluateSecondStagePathContBudget(instance::RrspInstance, y::RrspPath)::Float64
     model::JuMP.Model = JuMP.Model()
     JuMP.set_optimizer(model, Rrsp.optimizer)
 
@@ -119,7 +119,7 @@ function solveRrspContBudget(instance::RrspInstance)::RrspSolution
         return createEmptyRrspSolution(length(instance.graph.arcs))
     end
 
-    first_stage_path::Path = Path([JuMP.value(x[j]) > 0.5 for j in 1:length(instance.graph.arcs)])
+    first_stage_path::RrspPath = RrspPath([JuMP.value(x[j]) > 0.5 for j in 1:length(instance.graph.arcs)])
     first_stage_cost::Float64 = sum(instance.graph.arcs[j].cost.first*first_stage_path.arcs[j] for j in 1:length(instance.graph.arcs))
     # now that the first stage path is known we have to decide among second stage path candidates =#
     second_stage_cost::Float64 = Inf
@@ -127,14 +127,14 @@ function solveRrspContBudget(instance::RrspInstance)::RrspSolution
     for i in 1:second_stage_paths_num
         cost::Float64 = evaluateSecondStagePathContBudget(
             instance,
-            Path([JuMP.value(y[i,j]) > 0.5 for j in 1:length(instance.graph.arcs)])
+            RrspPath([JuMP.value(y[i,j]) > 0.5 for j in 1:length(instance.graph.arcs)])
         )
         if cost < second_stage_cost
             second_stage_cost = cost
             second_stage_path_idx = i
         end
     end
-    second_stage_path::Path = Path([JuMP.value(y[second_stage_path_idx, j]) > 0.5 for j in 1:length(instance.graph.arcs)])
+    second_stage_path::RrspPath = RrspPath([JuMP.value(y[second_stage_path_idx, j]) > 0.5 for j in 1:length(instance.graph.arcs)])
 
     return RrspSolution(first_stage_path, second_stage_path, first_stage_cost + second_stage_cost)
 end
@@ -191,14 +191,14 @@ function solveRrspContBudgetDagForTheta(instance::RrspInstance, t::Integer)::Rrs
         return createEmptyRrspSolution(length(instance.graph.arcs))
     end
 
-    first_stage_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
-    second_stage_path::Path = argmin(
-        p::Path -> sum(
+    first_stage_path::RrspPath = RrspPath([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    second_stage_path::RrspPath = argmin(
+        p::RrspPath -> sum(
             p.arcs[i]*(
                   instance.graph.arcs[i].cost.second*JuMP.value(f_1[i])
                 + (instance.graph.arcs[i].cost.second + instance.graph.arcs[i].cost.delta)*JuMP.value(f_2[i]))
             for i in 1:length(instance.graph.arcs)),
-        [Path([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:num_of_snd_stage_paths]
+        [RrspPath([JuMP.value(y[j, i]) > 0.5 for i in 1:length(instance.graph.arcs)]) for j in 1:num_of_snd_stage_paths]
     )
 
     return RrspSolution(first_stage_path, second_stage_path, JuMP.objective_value(model))

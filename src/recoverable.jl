@@ -50,11 +50,11 @@ function solveRecoverableShortestPath(instance::RrspInstance)::RrspSolution
     JuMP.optimize!(model)
 
     if (!JuMP.has_values(model))
-        return RrspSolution(Path([]), Path([]), Inf)
+        return RrspSolution(RrspPath([]), RrspPath([]), Inf)
     end
 
-    x_path::Path = Path([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
-    y_path::Path = Path([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    x_path::RrspPath = RrspPath([JuMP.value(x[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
+    y_path::RrspPath = RrspPath([JuMP.value(y[i]) > 0.5 for i in 1:length(instance.graph.arcs)])
     return RrspSolution(x_path, y_path, JuMP.objective_value(model))
 end
 
@@ -115,11 +115,11 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
         ) for _ in 1:length(tree.nodes)
     ]
 
-    function getPathCardinality(p::Path)::Integer
+    function getPathCardinality(p::RrspPath)::Integer
         return sum(p.arcs)
     end
 
-    function getPathCostFirstStage(p::Path)::Float64
+    function getPathCostFirstStage(p::RrspPath)::Float64
         if getPathCardinality(p) == 0
             return Inf
         end
@@ -131,7 +131,7 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
         return cost.second + cost.delta
     end
 
-    function getPathCostSecondStageUpperBound(p::Path)::Float64
+    function getPathCostSecondStageUpperBound(p::RrspPath)::Float64
         if getPathCardinality(p) == 0
             return Inf
         end
@@ -162,7 +162,7 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
         return (node.is_leaf && node.operation == NONE) || (!node.is_leaf && node.operation != NONE)
     end
 
-    function invalidNode(node::AspTreeNode)::Nothing
+    function invalidateNode(node::AspTreeNode)::Nothing
         node.is_leaf = false
         node.operation = NONE
         return
@@ -172,8 +172,8 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
         return isNodeValid(node) && !node.is_leaf && tree.nodes[node.left].is_leaf && tree.nodes[node.right].is_leaf
     end
 
-    function mergeTwoPaths(p1::Path, p2::Path)::Path
-        return Path([p1.arcs[idx] || p2.arcs[idx] for idx in 1:length(p1.arcs)])
+    function mergeTwoPaths(p1::RrspPath, p2::RrspPath)::RrspPath
+        return RrspPath([p1.arcs[idx] || p2.arcs[idx] for idx in 1:length(p1.arcs)])
     end
 
     function mergeTwoRrspSolutions(s1::RrspSolution, s2::RrspSolution)::RrspSolution
@@ -186,11 +186,11 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
 
     function performParallelComposition(node::AspNodeData, left::AspNodeData, right::AspNodeData)::Nothing
         # opt first stage path
-        node.opt_first_stage_path = argmin(p::Path -> getPathCostFirstStage(p), [left.opt_first_stage_path, right.opt_first_stage_path])
+        node.opt_first_stage_path = argmin(p::RrspPath -> getPathCostFirstStage(p), [left.opt_first_stage_path, right.opt_first_stage_path])
 
         # opt second stage paths
         for l in 1:instance.k
-            node.opt_second_stage_path[l] = argmin(p::Path -> getPathCostSecondStageUpperBound(p), [left.opt_second_stage_path[l], right.opt_second_stage_path[l]])
+            node.opt_second_stage_path[l] = argmin(p::RrspPath -> getPathCostSecondStageUpperBound(p), [left.opt_second_stage_path[l], right.opt_second_stage_path[l]])
         end
 
         # opt feasible pairs
@@ -221,7 +221,7 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
         node.opt_second_stage_path[1] = createEmptyPath(length(instance.graph.arcs))
         for l in 2:instance.k
             node.opt_second_stage_path[l] = argmin(
-                p::Path -> getPathCostSecondStageUpperBound(p),
+                p::RrspPath -> getPathCostSecondStageUpperBound(p),
                 [mergeTwoPaths(left.opt_second_stage_path[j], right.opt_second_stage_path[l - j]) for j in 1:(l - 1)]
             )
         end
@@ -248,9 +248,9 @@ function solveRecoverableShortestPathInAsp(instance::RrspInstance)::RrspSolution
                     performSeriesComposition(asp_nodes_data[node_idx], asp_nodes_data[tree.nodes[node_idx].left], asp_nodes_data[tree.nodes[node_idx].right])
                 end
 
-                # remove leaves from the tree
-                invalidNode(tree.nodes[tree.nodes[node_idx].left])  # just invalid the nodes
-                invalidNode(tree.nodes[tree.nodes[node_idx].right])
+                # remove leaves from the tree (just invalidate the nodes)
+                invalidateNode(tree.nodes[tree.nodes[node_idx].left])
+                invalidateNode(tree.nodes[tree.nodes[node_idx].right])
                 
                 # the node becomes a leaf then
                 tree.nodes[node_idx].is_leaf = true
