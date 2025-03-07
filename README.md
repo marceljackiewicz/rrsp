@@ -10,15 +10,11 @@ This repository contains implementation of algorithms, in the form of [Julia](ht
 
 ## Documentation
 
-(To be hosted as github page)
-
 The package documentation is generated using [Documenter.jl](https://documenter.juliadocs.org/stable/) package.
-To generate the documentation clone the repository, enter `Rrsp/docs` directory and use
+It is hosted at [github pages](https://marceljackiewicz.github.io/rrsp/).
 
-    $ julia --project make.jl
-
-from your command line. Make sure `Documenter` package is installed. (You can obtain it via `Pkg` package manager.)
-The documentation is available as a web page at `Rrsp/docs/build/index.html`. Use any web browser to open it.
+The documentation goes through the API of RRSP solver in detail and explains types and solver functions.
+However, for a quick start you can skip to [working example](https://marceljackiewicz.github.io/rrsp/#Working-Example) section.
 
 ## Project Funding Notice
 
