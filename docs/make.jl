@@ -20,6 +20,6 @@ makedocs(;
     remotes = nothing,
 )
 
-# GitHub Actions deploys `docs/build` with actions/deploy-pages (see
-# `.github/workflows/documentation.yml`). Local builds stop here; open
+# GitHub Actions builds and deploys `docs/build` with actions/deploy-pages (see
+# `.github/workflows/static.yml`, which rebuilds the docs on every push to `gh-pages`). Local builds stop here; open
 # `docs/build/index.html` in a browser.

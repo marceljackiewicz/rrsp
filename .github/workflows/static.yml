@@ -1,5 +1,6 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+# Build the Documenter site from docs/ and deploy it to GitHub Pages on every
+# push to the gh-pages branch. Repo setting: Pages -> Source -> GitHub Actions.
+name: Build and deploy docs
 
 on:
   # Runs on pushes targeting the default branch
@@ -31,12 +32,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+      - uses: julia-actions/cache@v2
+      - name: Build documentation
+        run: |
+          julia --project=docs -e 'using Pkg; Pkg.instantiate()'
+          julia --project=docs docs/make.jl
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
           path: './docs/build/'
       - name: Deploy to GitHub Pages
         id: deployment
