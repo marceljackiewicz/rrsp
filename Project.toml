@@ -1,7 +1,13 @@
 name = "Rrsp"
 uuid = "0a704f38-5b8f-4fb6-9591-2aeb036c3e30"
-authors = ["Marcel Jackiewicz"]
 version = "0.1.0"
+authors = ["Marcel Jackiewicz"]
 
 [deps]
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[compat]
+JuMP = "1.31"
+Random = "1"
+julia = "1.11"

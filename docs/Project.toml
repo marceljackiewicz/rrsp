@@ -1,2 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Rrsp = "0a704f38-5b8f-4fb6-9591-2aeb036c3e30"
+
+[compat]
+Documenter = "1"
